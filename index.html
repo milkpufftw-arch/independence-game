@@ -1,25 +1,10 @@
 <!DOCTYPE html>
-<!-- 
-修正說明：
-1) 既有程式中 startJobInterview 使用 startQuiz('job_interview', mixedPool) 可能會因傳入題庫邏輯錯誤導致面試只出現 1 題或直接略過測驗。本版將先從指定職缺題庫挑出 1 題，再從共通題庫隨機挑選 2 題組成 3 題，並傳入 startQuiz 以確保每次面試都有三題。
-2) 租屋流程中，若未滿 18 歲且沒有陪同卡或 AP 不足，只顯示 alert 而沒有日誌訊息，容易造成「沒反應」的錯覺。本版改為使用 addLog 提示條件不足，並移除單純 alert。
-3) 人力銀行應徵按鈕以前僅檢查 ap < 1，未考慮不同職缺的 apCost。本版改用 job.apCost 判斷體力是否足夠，並在不符合條件時寫入日誌。
-4) startQuiz 函式未正確處理自訂題庫(customQs)與標題(title)邏輯，本版重新實作，優先使用 customQs，若無則取自 QUIZ_DB。若題目數不足三題直接視為通過。
-驗收流程：
-- 測試各房型按鈕，應出現 3 題檢測，答完後依成績決定是否成功簽約，並返回首頁，日誌紀錄。
-- 測試各工作職缺應徵，確認每次面試出現 3 題（1 題專屬 + 2 題通用）；全對才錄取，否則失敗並提示；AP 扣減正確並寫入日誌。
-- 測試資源地圖每個按鈕，能顯示測驗或資源效果並正確更新狀態與日誌。
-- 測試財務管家購買各類商品，不同支付方式正確扣款，週結算時帳單正確扣除。
-- 測試所有因 AP/年齡/條件不足時，畫面日誌有明確提示，不會沒有反應。
-- 全站開啟無語法錯誤，無未定義錯誤，狀態管理正常。
--->
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>自立大冒險 - 自立生活模擬器</title>
     
-    <!-- 1. 載入核心函式庫 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -62,7 +47,6 @@
         </div>
     </div>
 
-    <!-- 2. 錯誤攔截器 -->
     <script>
         window.onerror = function(msg, url, line, col, error) {
             document.getElementById('loading-msg').style.display = 'none';
@@ -73,7 +57,6 @@
         };
     </script>
 
-    <!-- 3. 遊戲主程式 -->
     <script type="text/babel">
         // --- 1. React Hooks & Utils ---
         const { useState, useEffect } = React;
@@ -83,7 +66,46 @@
             return [...arr].sort(() => Math.random() - 0.5);
         };
 
-        // --- 2. 遊戲資料 (GAME_DATA) ---
+        // --- 2. 圖示元件 ---
+        const Icon = ({ children, size = 24, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>{children}</svg>
+        );
+
+        const GIconHome = (p) => <Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
+        const GIconBriefcase = (p) => <Icon {...p}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></Icon>;
+        const GIconMap = (p) => <Icon {...p}><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></Icon>;
+        const GIconCard = (p) => <Icon {...p}><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></Icon>;
+        const GIconAlert = (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></Icon>;
+        const GIconHeart = (p) => <Icon {...p}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></Icon>;
+        const GIconSmile = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></Icon>;
+        const GIconShield = (p) => <Icon {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Icon>;
+        const GIconHelp = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></Icon>;
+        const GIconShop = (p) => <Icon {...p}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></Icon>;
+        const GIconClose = (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>;
+        const GIconZap = (p) => <Icon {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Icon>;
+        const GIconDollar = (p) => <Icon {...p}><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></Icon>;
+        const GIconMoon = (p) => <Icon {...p}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></Icon>;
+        const GIconLock = (p) => <Icon {...p}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Icon>;
+        const GIconTerminal = (p) => <Icon {...p}><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></Icon>;
+        const GIconCheck = (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
+        const GIconRight = (p) => <Icon {...p}><path d="m9 18 6-6-6-6"/></Icon>;
+        const GIconReceipt = (p) => <Icon {...p}><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17V7"/></Icon>;
+        const GIconLeft = (p) => <Icon {...p}><line x1="19" x2="5" y1="12" y2="12"/><polyline points="12 19 5 12 12 5"/></Icon>;
+        const GIconBuilding = (p) => <Icon {...p}><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></Icon>;
+        const GIconLandmark = (p) => <Icon {...p}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></Icon>;
+        const GIconUsers = (p) => <Icon {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>;
+        const GIconBook = (p) => <Icon {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
+        const GIconBrain = (p) => <Icon {...p}><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></Icon>;
+        const GIconUser = (p) => <Icon {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>;
+        const GIconTrend = (p) => <Icon {...p}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></Icon>;
+        const GIconPill = (p) => <Icon {...p}><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></Icon>;
+        const GIconMusic = (p) => <Icon {...p}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></Icon>;
+        const GIconShirt = (p) => <Icon {...p}><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/></Icon>;
+        const GIconDrink = (p) => <Icon {...p}><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="2" y2="8"/><line x1="10" x2="10" y1="2" y2="8"/><line x1="14" x2="14" y1="2" y2="8"/></Icon>;
+        const GIconPhone = (p) => <Icon {...p}><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></Icon>;
+
+
+        // --- 3. 遊戲資料 (GAME_DATA) ---
         const GAME_DATA = {
             INITIAL_STATS: { money: 0, health: 100, mood: 100, security: 50, week: 1, maxWeeks: 8, age: 18, ap: 3, maxAp: 3 },
             CHARACTER_ORIGINS: [
@@ -156,40 +178,6 @@
             }
         };
 
-        // --- 3. Icon Components ---
-        const Icon = ({ children, size = 24, ...props }) => (
-            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>{children}</svg>
-        );
-
-        const IconHome = (p) => <Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
-        const IconBriefcase = (p) => <Icon {...p}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></Icon>;
-        const IconMap = (p) => <Icon {...p}><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></Icon>;
-        const IconCreditCard = (p) => <Icon {...p}><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></Icon>;
-        const IconAlert = (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></Icon>;
-        const IconHeart = (p) => <Icon {...p}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></Icon>;
-        const IconSmile = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></Icon>;
-        const IconShield = (p) => <Icon {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Icon>;
-        const IconHelp = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></Icon>;
-        const IconShop = (p) => <Icon {...p}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></Icon>;
-        const IconClose = (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>;
-        const IconZap = (p) => <Icon {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Icon>;
-        const IconDollar = (p) => <Icon {...p}><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></Icon>;
-        const IconMoon = (p) => <Icon {...p}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></Icon>;
-        const IconLock = (p) => <Icon {...p}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Icon>;
-        const IconTerminal = (p) => <Icon {...p}><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></Icon>;
-        const IconCheck = (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
-        const IconRight = (p) => <Icon {...p}><path d="m9 18 6-6-6-6"/></Icon>;
-        const IconReceipt = (p) => <Icon {...p}><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17V7"/></Icon>;
-        const IconLeft = (p) => <Icon {...p}><line x1="19" x2="5" y1="12" y2="12"/><polyline points="12 19 5 12 12 5"/></Icon>;
-        const IconBuilding = (p) => <Icon {...p}><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></Icon>;
-        const IconLandmark = (p) => <Icon {...p}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></Icon>;
-        const IconUsers = (p) => <Icon {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>;
-        const IconBook = (p) => <Icon {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
-        const IconBrain = (p) => <Icon {...p}><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></Icon>;
-        const IconUser = (p) => <Icon {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>;
-        const IconArrowLeft = (p) => <Icon {...p}><line x1="19" x2="5" y1="12" y2="12"/><polyline points="12 19 5 12 12 5"/></Icon>;
-        const IconChevronRight = (p) => <Icon {...p}><path d="m9 18 6-6-6-6"/></Icon>;
-
         // --- 4. Sub-Components (Renderers) ---
 
         const FloatingTextOverlay = ({ texts }) => (
@@ -206,11 +194,11 @@
             <div className="bg-zinc-900 border-b-4 border-black p-2 flex justify-between items-center text-xs font-mono text-white sticky top-0 z-20 neo-shadow-sm">
                 <div className="flex gap-2 items-center">
                     <span className="bg-red-600 px-2 py-1 text-white font-bold rounded">第 {stats.week} 週</span>
-                    <div className="flex items-center gap-1 text-rose-400"><IconHeart size={12} /> {stats.health}</div>
-                    <div className="flex items-center gap-1 text-violet-400"><IconSmile size={12} /> {stats.mood}</div>
+                    <div className="flex items-center gap-1 text-rose-400"><GIconHeart size={12} /> {stats.health}</div>
+                    <div className="flex items-center gap-1 text-violet-400"><GIconSmile size={12} /> {stats.mood}</div>
                 </div>
                 <div className="flex gap-2 items-center">
-                    <div className="flex items-center gap-1 text-cyan-400"><IconShield size={12} /> {stats.security}</div>
+                    <div className="flex items-center gap-1 text-cyan-400"><GIconShield size={12} /> {stats.security}</div>
                     <div className="flex gap-1">
                         {[...Array(stats.maxAp)].map((_, i) => (
                             <div key={i} className={`w-2 h-4 border border-white ${i < stats.ap ? 'bg-yellow-400' : 'bg-zinc-700'}`}></div>
@@ -246,7 +234,7 @@
                 {!spinResult ? (
                     <>
                         <h1 className="text-4xl font-black mb-4 font-pixel">自立大冒險</h1>
-                        <div className={`w-48 h-48 rounded-full border-8 border-black bg-white flex items-center justify-center mb-8 neo-shadow relative ${spinning ? 'animate-spin-fast' : ''}`} style={{background: 'conic-gradient(from 0deg, #ef4444, #eab308, #3b82f6, #ef4444)'}}><IconHelp size={64} className="text-black z-10"/></div>
+                        <div className={`w-48 h-48 rounded-full border-8 border-black bg-white flex items-center justify-center mb-8 neo-shadow relative ${spinning ? 'animate-spin-fast' : ''}`} style={{background: 'conic-gradient(from 0deg, #ef4444, #eab308, #3b82f6, #ef4444)'}}><GIconHelp size={64} className="text-black z-10"/></div>
                         <button onClick={spinForCharacter} disabled={spinning} className="w-full bg-black text-white text-xl font-bold py-4 border-4 border-transparent hover:border-white neo-shadow disabled:opacity-50">{spinning ? '命運轉動中...' : '開始轉動 (START)'}</button>
                     </>
                 ) : (
@@ -265,7 +253,7 @@
             </div>
         );
 
-        const RenderHome = ({ stats, inventory, bills, logs, setGameState, advanceWeek }) => (
+        const RenderHome = ({ stats, inventory, bills, logs, setGameState, advanceWeek, isProcessing }) => (
             <div className="h-full bg-zinc-800 flex flex-col relative font-main">
                 <div className="bg-gray-100 p-4 border-b-4 border-black mb-4 neo-shadow relative z-10">
                     <div className="flex justify-between items-end">
@@ -275,11 +263,11 @@
                 </div>
                 {stats.mood < 30 && <div className="mx-4 mb-2 bg-red-500 text-white p-2 text-sm font-bold text-center animate-pulse border-2 border-red-700 shadow-lg">⚠️ 心情過低！請使用「休息」或購買娛樂項目！</div>}
                 <div className="grid grid-cols-2 gap-4 px-4 mb-auto z-10">
-                    <AppIcon icon={IconHome} label="租屋中心" color="bg-orange-400" onClick={() => setGameState('app_house')} badge={!inventory.hasHouse} />
-                    <AppIcon icon={IconBriefcase} label="人力銀行" color="bg-blue-400" onClick={() => setGameState('app_job')} />
-                    <AppIcon icon={IconMap} label="資源地圖" color="bg-emerald-400" onClick={() => setGameState('app_resource')} />
-                    <AppIcon icon={IconCreditCard} label="財務管家" color="bg-violet-400" onClick={() => setGameState('app_finance')} />
-                    <div className="col-span-2 mt-2"><button onClick={advanceWeek} className="w-full bg-zinc-900 text-white border-2 border-black p-3 font-bold flex items-center justify-center gap-2 neo-shadow neo-btn"><IconMoon size={18} className="text-yellow-400"/> {stats.ap === 0 ? '下週 (休息)' : '結束本週'}</button></div>
+                    <AppIcon icon={GIconHome} label="租屋中心" color="bg-orange-400" onClick={() => setGameState('app_house')} badge={!inventory.hasHouse} />
+                    <AppIcon icon={GIconBriefcase} label="人力銀行" color="bg-blue-400" onClick={() => setGameState('app_job')} />
+                    <AppIcon icon={GIconMap} label="資源地圖" color="bg-emerald-400" onClick={() => setGameState('app_resource')} />
+                    <AppIcon icon={GIconCard} label="財務管家" color="bg-violet-400" onClick={() => setGameState('app_finance')} />
+                    <div className="col-span-2 mt-2"><button onClick={advanceWeek} disabled={isProcessing} className="w-full bg-zinc-900 text-white border-2 border-black p-3 font-bold flex items-center justify-center gap-2 neo-shadow neo-btn disabled:opacity-50"><GIconMoon size={18} className="text-yellow-400"/> {stats.ap === 0 ? '下週 (休息)' : '結束本週'}</button></div>
                 </div>
                 <div className="bg-zinc-900 p-4 border-t-4 border-zinc-700 h-64 flex flex-col overflow-y-auto custom-scroll text-green-400 font-mono text-sm">{logs.map((l, i) => <div key={i} className="mb-1">{l}</div>)}</div>
             </div>
@@ -287,7 +275,7 @@
 
         const RenderJobs = ({ stats, inventory, addLog, updateStats, startJobInterview, setGameState }) => (
             <div className="h-full flex flex-col bg-slate-50 font-main">
-                <div className="bg-blue-600 text-white p-3 shadow-md flex items-center gap-3 app-header"><button onClick={() => setGameState('home')}><IconArrowLeft/></button><h2 className="font-bold">人力銀行</h2></div>
+                <div className="bg-blue-600 text-white p-3 shadow-md flex items-center gap-3 app-header"><button onClick={() => setGameState('home')}><GIconLeft/></button><h2 className="font-bold">人力銀行</h2></div>
                 <div className="p-3 space-y-3 overflow-y-auto flex-1">
                     {GAME_DATA.JOBS.map(job => {
                         const ok = stats.age >= job.minAge || (inventory.items.includes('accompaniment_card') && !job.strictAge);
@@ -295,129 +283,110 @@
                             <div key={job.id} className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
                                 <div className="flex justify-between"><h3 className="font-bold">{job.title}</h3><span className="text-blue-600 font-bold">${job.wage}/hr</span></div>
                                 <p className="text-sm text-gray-500 my-2">{job.desc}</p>
-                                <button
-                                    disabled={stats.ap < job.apCost || !ok}
-                                    onClick={() => {
-                                        if (stats.ap < job.apCost) {
-                                            addLog('體力不足');
-                                            return;
-                                        }
-                                        if (!ok) {
-                                            addLog('資格不符');
-                                            return;
-                                        }
-                                        startJobInterview(job);
-                                    }}
-                                    className="w-full bg-blue-600 text-white font-bold py-2 rounded disabled:bg-gray-300"
-                                >
-                                    {!ok ? '資格不符 (需社工陪同或年齡)' : `應徵 (${job.apCost} AP)`}
-                                </button>
+                                <button disabled={stats.ap < job.apCost || !ok} onClick={() => { if(stats.ap < 1) addLog('太累了'); else { startJobInterview(job); } }} className="w-full bg-blue-600 text-white font-bold py-2 rounded disabled:bg-gray-300">{!ok ? '資格不符 (需社工陪同或年齡)' : `應徵 (${job.apCost} AP)`}</button>
                             </div>
                         );
                     })}
-                    <button onClick={() => setGameState('home')} className="w-full mt-6 bg-slate-200 text-slate-600 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition-colors"><IconArrowLeft size={18}/> 回到首頁</button>
+                    <button onClick={() => setGameState('home')} className="w-full mt-6 bg-slate-200 text-slate-600 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition-colors"><GIconLeft size={18}/> 回到首頁</button>
                 </div>
             </div>
         );
 
         const RenderHousing = ({ stats, inventory, addLog, updateStats, startQuiz, setInventory, setGameState }) => (
             <div className="h-full flex flex-col bg-slate-50 font-main">
-                <div className="bg-orange-500 text-white p-3 shadow-md flex items-center gap-3 app-header"><button onClick={() => setGameState('home')}><IconArrowLeft/></button><h2 className="font-bold">好屋租房</h2></div>
+                <div className="bg-orange-500 text-white p-3 shadow-md flex items-center gap-3 app-header"><button onClick={() => setGameState('home')}><GIconLeft/></button><h2 className="font-bold">好屋租房</h2></div>
                 <div className="p-3 space-y-3 overflow-y-auto flex-1">
-                    {inventory.hasHouse ? <div className="bg-white p-6 text-center border-2 border-green-500 rounded"><IconCheck className="mx-auto text-green-500 mb-2"/><h3 className="font-bold">已入住: {inventory.houseName}</h3></div> : 
+                    {inventory.hasHouse ? <div className="bg-white p-6 text-center border-2 border-green-500 rounded"><GIconCheck className="mx-auto text-green-500 mb-2"/><h3 className="font-bold">已入住: {inventory.houseName}</h3></div> : 
                     GAME_DATA.HOUSING.map(h => (
                         <div key={h.id} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
                             <div className="flex justify-between font-bold"><h3>{h.title}</h3><span className="text-orange-600">${h.rent}</span></div>
                             <div className="text-xs bg-gray-100 inline-block px-1 rounded mb-2">押金 ${h.deposit}</div>
                             <p className="text-sm text-gray-500 mb-2">{h.desc}</p>
                             <button onClick={() => {
-                                if (stats.ap < 1) { addLog('體力不足'); return; }
-                                if (stats.age < 18 && !inventory.items.includes('accompaniment_card') && h.id !== 'ccsa') {
-                                    addLog('未滿18需社工陪同');
-                                    return;
-                                }
-                                updateStats({ ap: -1 });
+                                if(stats.ap < 1) { addLog('沒體力'); return; }
+                                if(stats.age < 18 && !inventory.items.includes('accompaniment_card') && h.id !== 'ccsa') { alert('未滿18需社工陪同'); return; }
+                                updateStats({ap:-1});
                                 startQuiz(h.quizType, (pass) => {
-                                    if (pass) {
-                                        if (stats.money >= h.deposit || h.rent === 0) {
-                                            updateStats({ money: -h.deposit, security: h.security });
-                                            setInventory(p => ({...p, hasHouse: true, houseName: h.title}));
-                                            addLog('簽約成功');
-                                            setGameState('home');
-                                        } else {
-                                            addLog('錢不夠付押金');
-                                        }
-                                    } else {
-                                        addLog('看房檢核失敗');
-                                    }
+                                    if(pass) {
+                                        if(stats.money >= h.deposit || h.rent === 0) { updateStats({money: -h.deposit, security: h.security}); setInventory(p => ({...p, hasHouse: true, houseName: h.title})); addLog('簽約成功'); setGameState('home'); }
+                                        else addLog('錢不夠付押金');
+                                    } else addLog('看房檢核失敗');
                                 });
                             }} className="w-full bg-orange-500 text-white font-bold py-2 rounded">預約看房 (1 AP)</button>
                         </div>
                     ))}
-                    <button onClick={() => setGameState('home')} className="w-full mt-6 bg-slate-200 text-slate-600 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition-colors"><IconArrowLeft size={18}/> 回到首頁</button>
+                    <button onClick={() => setGameState('home')} className="w-full mt-6 bg-slate-200 text-slate-600 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition-colors"><GIconLeft size={18}/> 回到首頁</button>
                 </div>
             </div>
         );
 
         const RenderResource = ({ stats, inventory, addLog, updateStats, startQuiz, setInventory, setGameState }) => (
             <div className="h-full flex flex-col bg-slate-50 font-main">
-                <div className="bg-emerald-600 text-white p-3 shadow-md flex items-center gap-3 app-header"><button onClick={() => setGameState('home')}><IconArrowLeft/></button><h2 className="font-bold">資源地圖</h2></div>
+                <div className="bg-emerald-600 text-white p-3 shadow-md flex items-center gap-3 app-header"><button onClick={() => setGameState('home')}><GIconLeft/></button><h2 className="font-bold">資源地圖</h2></div>
                 <div className="p-4 space-y-4 overflow-y-auto flex-1">
                     <div className="bg-white p-4 rounded-lg border border-slate-200">
-                        <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2"><IconHome className="text-orange-500"/> CCSA 自立服務</h3>
+                        <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2"><GIconHome className="text-orange-500"/> CCSA 自立服務</h3>
                         <div className="grid grid-cols-2 gap-2">
                             <button onClick={() => startQuiz('ccsa_aid', (p) => { if(p) { updateStats({money:3000}); addLog('獲得補助'); setGameState('home'); } })} className="bg-orange-100 text-orange-700 py-2 rounded font-bold text-sm">經濟補助</button>
                             <button onClick={() => {
                                 if(stats.ap < 1) { addLog('體力不足'); return; }
                                 if(inventory.items.includes('accompaniment_card')) { addLog('已有陪同卡'); return; }
                                 updateStats({ap:-1}); setInventory(p=>({...p, items:[...p.items, 'accompaniment_card']})); addLog('獲得社工陪同卡');
-                            }} className="bg-red-100 text-red-700 py-2 rounded font-bold text-sm flex items-center justify-center gap-1"><IconUsers size={14}/> 申請陪同</button>
+                            }} className="bg-red-100 text-red-700 py-2 rounded font-bold text-sm flex items-center justify-center gap-1"><GIconUsers size={14}/> 申請陪同</button>
                         </div>
                         <div className="grid grid-cols-2 gap-2 mt-2">
-                             <button onClick={() => startQuiz('ccsa_counseling', (p)=>{if(p){updateStats({mood:30}); addLog('諮商完成');}})} className="bg-pink-500 text-white py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-1"><IconBrain size={14}/> 心理諮商</button>
-                             <button onClick={() => startQuiz('ccsa_training', (p)=>{if(p){updateStats({maxAp:1}); addLog('培訓完成');}})} className="bg-blue-500 text-white py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-1"><IconBook size={14}/> 自立培訓</button>
+                             <button onClick={() => startQuiz('ccsa_counseling', (p)=>{if(p){updateStats({mood:30}); addLog('諮商完成');}})} className="bg-pink-500 text-white py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-1"><GIconBrain size={14}/> 心理諮商</button>
+                             <button onClick={() => startQuiz('ccsa_training', (p)=>{if(p){updateStats({maxAp:1}); addLog('培訓完成');}})} className="bg-blue-500 text-white py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-1"><GIconBook size={14}/> 自立培訓</button>
                         </div>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-slate-200">
-                        <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2"><IconBriefcase className="text-blue-500"/> 就業服務站</h3>
+                        <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2"><GIconBriefcase className="text-blue-500"/> 就業服務站</h3>
                         <div className="grid grid-cols-2 gap-2">
                              <button onClick={() => startQuiz('job_test', (p)=>{if(p){updateStats({money:1000}); addLog('獲得獎勵金');}})} className="bg-blue-500 text-white py-2 rounded-lg font-bold text-sm">職能測驗</button>
                              <button onClick={()=>{setGameState('app_job'); updateStats({ap:1}); addLog('AP+1');}} className="bg-blue-100 text-blue-700 py-2 rounded-lg font-bold text-sm">找工作</button>
                         </div>
                     </div>
                     <div className="bg-white p-4 rounded-lg border border-slate-200">
-                        <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2"><IconLandmark className="text-slate-500"/> 公家機關</h3>
+                        <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2"><GIconLandmark className="text-slate-500"/> 公家機關</h3>
                         <button onClick={() => {
                             if(stats.age < 18) { addLog('未滿18無法辦良民證'); return; }
                             if(inventory.items.includes('good_citizen_card')) { addLog('已持有'); return; }
                             setInventory(p=>({...p, items:[...p.items, 'good_citizen_card']})); addLog('獲得良民證');
                         }} className="w-full bg-slate-200 text-slate-700 py-2 rounded font-bold">辦理良民證</button>
                     </div>
-                    <button onClick={() => setGameState('home')} className="w-full mt-6 bg-slate-200 text-slate-600 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition-colors"><IconArrowLeft size={18}/> 回到首頁</button>
+                    <button onClick={() => setGameState('home')} className="w-full mt-6 bg-slate-200 text-slate-600 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition-colors"><GIconLeft size={18}/> 回到首頁</button>
                 </div>
             </div>
         );
 
-        const RenderFinance = ({ stats, bills, setPurchaseModal, setGameState }) => (
-            <div className="h-full flex flex-col bg-slate-50 font-main">
-                <div className="bg-violet-600 text-white p-3 shadow-md flex items-center gap-3 app-header"><button onClick={() => setGameState('home')}><IconArrowLeft/></button><h2 className="font-bold">財務管家</h2></div>
-                <div className="p-4 space-y-4 overflow-y-auto flex-1">
-                    <div className="bg-white p-4 rounded border border-slate-200"><h3 className="font-bold mb-2">待繳帳單</h3>{bills.length ? bills.map((b,i)=><div key={i} className="text-sm flex justify-between"><span>{b.name}</span><span className="text-red-500">-${b.amount}</span></div>) : <div className="text-gray-400 text-sm">無帳單</div>}</div>
-                    <div className="grid grid-cols-1 gap-3">
-                        {GAME_DATA.SHOP_ITEMS.map(item => (
-                            <div key={item.id} className="bg-white p-3 rounded flex justify-between items-center shadow-sm" onClick={() => setPurchaseModal(item)}>
-                                <div className="flex items-center gap-3">
-                                    <div className="bg-gray-100 p-2 rounded"><IconShop size={20}/></div>
-                                    <div><div className="font-bold">{item.name}</div><div className="text-xs text-gray-500">{item.desc}</div></div>
+        const RenderFinance = ({ stats, bills, setPurchaseModal, setGameState }) => {
+            const getIcon = (type) => {
+                const map = { food: GIconHeart, health: GIconShield, shield: GIconShield, pill: GIconHeart, trend: GIconTrend, drink: GIconSmile, shirt: GIconUser, music: GIconSmile, phone: GIconShop };
+                const IconComp = map[type] || GIconShop;
+                return <IconComp size={20}/>;
+            };
+
+            return (
+                <div className="h-full flex flex-col bg-slate-50 font-main">
+                    <div className="bg-violet-600 text-white p-3 shadow-md flex items-center gap-3 app-header"><button onClick={() => setGameState('home')}><GIconLeft/></button><h2 className="font-bold">財務管家</h2></div>
+                    <div className="p-4 space-y-4 overflow-y-auto flex-1">
+                        <div className="bg-white p-4 rounded border border-slate-200"><h3 className="font-bold mb-2">待繳帳單</h3>{bills.length ? bills.map((b,i)=><div key={i} className="text-sm flex justify-between"><span>{b.name}</span><span className="text-red-500">-${b.amount}</span></div>) : <div className="text-gray-400 text-sm">無帳單</div>}</div>
+                        <div className="grid grid-cols-1 gap-3">
+                            {GAME_DATA.SHOP_ITEMS.map(item => (
+                                <div key={item.id} className="bg-white p-3 rounded flex justify-between items-center shadow-sm" onClick={() => setPurchaseModal(item)}>
+                                    <div className="flex items-center gap-3">
+                                        <div className="bg-gray-100 p-2 rounded">{getIcon(item.icon)}</div>
+                                        <div><div className="font-bold">{item.name}</div><div className="text-xs text-gray-500">{item.desc}</div></div>
+                                    </div>
+                                    <div className="font-bold text-violet-600">${item.price}</div>
                                 </div>
-                                <div className="font-bold text-violet-600">${item.price}</div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
+                        <button onClick={() => setGameState('home')} className="w-full mt-6 bg-slate-200 text-slate-600 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition-colors"><GIconLeft size={18}/> 回到首頁</button>
                     </div>
-                    <button onClick(() => setGameState('home')} className="w-full mt-6 bg-slate-200 text-slate-600 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition-colors"><IconArrowLeft size={18}/> 回到首頁</button>
                 </div>
-            </div>
-        );
+            );
+        };
 
         const RenderEnding = ({ stats, inventory }) => {
             const isSuccess = stats.money >= 0 && stats.health > 0;
@@ -447,11 +416,11 @@
                         <p className="text-slate-600 leading-relaxed text-sm text-left">{message}</p>
                     </div>
                     <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-4">
-                        <h3 className="font-bold border-b-2 border-black pb-2 mb-2 flex items-center gap-2"><IconCreditCard size={20}/> 最終資產</h3>
+                        <h3 className="font-bold border-b-2 border-black pb-2 mb-2 flex items-center gap-2"><GIconCreditCard size={20}/> 最終資產</h3>
                         <div className="text-right"><span className={`text-4xl font-black font-pixel ${stats.money < 0 ? 'text-red-500' : 'text-green-600'}`}>${stats.money}</span></div>
                     </div>
                     <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-6 flex-1">
-                        <h3 className="font-bold border-b-2 border-black pb-2 mb-2 flex items-center gap-2"><IconCheck size={20}/> 解鎖成就</h3>
+                        <h3 className="font-bold border-b-2 border-black pb-2 mb-2 flex items-center gap-2"><GIconCheck size={20}/> 解鎖成就</h3>
                         <div className="flex flex-wrap gap-2">{achievements.length > 0 ? achievements.map(ach => <span key={ach} className="bg-yellow-200 border-2 border-black px-2 py-1 text-xs font-bold rounded-full">{ach}</span>) : <span className="text-slate-400 text-xs">無特殊成就</span>}</div>
                     </div>
                     <button onClick={()=>window.location.reload()} className="w-full bg-black text-white text-xl font-bold py-4 border-4 border-white hover:bg-zinc-800 shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all">再來一局 (RESTART)</button>
@@ -473,6 +442,7 @@
             const [screenEffect, setScreenEffect] = useState('');
             const [spinning, setSpinning] = useState(false);
             const [spinResult, setSpinResult] = useState(null);
+            const [isProcessing, setIsProcessing] = useState(false); // New: 防止重複點擊
 
             const showFloat = (text, type = 'neutral') => {
                 const id = Date.now() + Math.random();
@@ -541,6 +511,9 @@
             };
 
             const advanceWeek = () => {
+                if (isProcessing) return;
+                setIsProcessing(true);
+
                 let livingCost = 1500;
                 if (inventory.hasHouse && inventory.houseName !== 'CCSA 自立宿舍') livingCost += 500;
                 
@@ -580,6 +553,7 @@
 
                 setTimeout(() => {
                     triggerRandomEvent();
+                    setIsProcessing(false);
                 }, 1000);
             };
 
@@ -628,15 +602,10 @@
 
             const addLog = (msg) => setLogs(prev => [`> ${msg}`, ...prev].slice(0, 5));
 
-            // *** Modified: Start Job Interview picks 1 job-specific question + 2 generic ***
             const startJobInterview = (job) => {
-                // 從職缺題庫挑選 1 題，再從共通題庫挑 2 題
-                const jobQs = job.interviews ? job.interviews : [];
-                const genericQs = shuffleArray(GAME_DATA.GENERIC_JOB_QUESTIONS).slice(0, 2);
-                const customQs = [...jobQs.slice(0, 1), ...genericQs];
-                // 扣除 apCost 的體力
-                const cost = job.apCost || 1;
-                updateStats({ ap: -cost });
+                const mixedPool = [...job.interviews, ...GAME_DATA.GENERIC_JOB_QUESTIONS];
+                updateStats({ ap: -1 });
+                
                 startQuiz('job_interview', (passed) => {
                     if (passed) {
                         updateStats({ 
@@ -649,21 +618,17 @@
                         addLog(`面試失敗，或許你需要加強勞權知識。`);
                         updateStats({ mood: -10 });
                     }
-                }, customQs);
+                }, mixedPool);
             };
 
-            // *** Modified: startQuiz now respects custom question sets ***
             const startQuiz = (type, cb, customQs) => {
-                // 使用自定題庫優先，其次使用資料庫
-                const db = GAME_DATA.QUIZ_DB[type];
-                const questions = (customQs && customQs.length) ? customQs : (db ? db.questions : []);
-                const title = db ? db.title : (type === 'job_interview' ? '面試' : '檢核');
-                if (!questions || questions.length < 3) {
-                    cb(true);
-                    return;
+                const qData = GAME_DATA.QUIZ_DB[type] || { title: '檢核', questions: customQs || [] };
+                if (!qData.questions || qData.questions.length < 3) { 
+                    cb(true); 
+                    return; 
                 }
-                const qs = shuffleArray(questions).slice(0, 3);
-                setActiveQuiz({ title, questions: qs, step: 0, cb });
+                const qs = shuffleArray(qData.questions).slice(0,3);
+                setActiveQuiz({ ...qData, questions: qs, step: 0, cb });
             };
 
             const openPurchaseModal = (item) => {
@@ -723,51 +688,59 @@
 
                 let outcome = {};
                 let message = "";
+                
+                try {
+                    if (currentEvent.id === 'police') {
+                        const hasCard = inventory.items.includes('good_citizen_card');
+                        const isAdult = stats.age >= 18;
 
-                if (currentEvent.id === 'police') {
-                    const hasCard = inventory.items.includes('good_citizen_card');
-                    const isAdult = stats.age >= 18;
+                        if (isAdult && hasCard) {
+                            outcome = {}; 
+                            message = "出示良民證，警察確認無誤後放行。";
+                        } else if (isAdult && !hasCard) {
+                            outcome = { ap: -1, mood: -15 };
+                            message = "滿18歲未帶證件，被盤查許久。(AP -1, 心情 -15)";
+                        } else {
+                            outcome = { ap: -1, mood: -20 };
+                            message = "未滿18歲深夜遊蕩，被帶回警局通知家長。(AP -1, 心情 -20)";
+                        }
+                    } 
+                    else if (currentEvent.type === 'health_risk' || currentEvent.type === 'accident_risk') {
+                        const hasItem = currentEvent.checkItem && inventory.items.includes(currentEvent.checkItem);
+                        if (hasItem) {
+                            outcome = currentEvent.pass; 
+                            // 修正：增加 Optional Chaining 和預設值，防止當 SHOP_ITEMS 找不到時崩潰
+                            const shopItem = GAME_DATA.SHOP_ITEMS.find(i=>i.effect.item===currentEvent.checkItem);
+                            const itemName = shopItem ? shopItem.name : '保險';
+                            message = `幸好有${itemName}，獲得理賠減輕損失。`;
+                        } else {
+                            outcome = currentEvent.penalty; 
+                            message = `發生${currentEvent.title}，因無保險需全額負擔！`;
+                        }
+                    }
+                    else if (currentEvent.type === 'scam') {
+                        if (currentEvent.checkStat && stats[currentEvent.checkStat] > currentEvent.threshold) {
+                            outcome = {}; 
+                            message = currentEvent.pass.msg || "你機警地識破了詐騙。";
+                        } else {
+                            outcome = currentEvent.penalty; 
+                            message = `慘遭${currentEvent.title}，損失慘重...`;
+                        }
+                    }
+                    else {
+                        outcome = currentEvent.penalty || {};
+                        message = "事件結束。";
+                    }
 
-                    if (isAdult && hasCard) {
-                        outcome = {}; 
-                        message = "出示良民證，警察確認無誤後放行。";
-                    } else if (isAdult && !hasCard) {
-                        outcome = { ap: -1, mood: -15 };
-                        message = "滿18歲未帶證件，被盤查許久。(AP -1, 心情 -15)";
-                    } else {
-                        outcome = { ap: -1, mood: -20 };
-                        message = "未滿18歲深夜遊蕩，被帶回警局通知家長。(AP -1, 心情 -20)";
-                    }
-                } 
-                else if (currentEvent.type === 'health_risk' || currentEvent.type === 'accident_risk') {
-                    const hasItem = currentEvent.checkItem && inventory.items.includes(currentEvent.checkItem);
-                    if (hasItem) {
-                        outcome = currentEvent.pass; 
-                        const itemName = GAME_DATA.SHOP_ITEMS.find(i=>i.effect.item===currentEvent.checkItem)?.name || '保險';
-                        message = `幸好有${itemName}，獲得理賠減輕損失。`;
-                    } else {
-                        outcome = currentEvent.penalty; 
-                        message = `發生${currentEvent.title}，因無保險需全額負擔！`;
-                    }
+                    updateStats(outcome);
+                    addLog(message);
+                } catch (e) {
+                    console.error("Event Error:", e);
+                    addLog("事件處理發生錯誤，已略過。");
+                } finally {
+                    setCurrentEvent(null);
+                    setGameState('home');
                 }
-                else if (currentEvent.type === 'scam') {
-                    if (currentEvent.checkStat && stats[currentEvent.checkStat] > currentEvent.threshold) {
-                        outcome = {}; 
-                        message = currentEvent.pass.msg || "你機警地識破了詐騙。";
-                    } else {
-                        outcome = currentEvent.penalty; 
-                        message = `慘遭${currentEvent.title}，損失慘重...`;
-                    }
-                }
-                else {
-                    outcome = currentEvent.penalty || {};
-                    message = "事件結束。";
-                }
-
-                updateStats(outcome);
-                addLog(message);
-                setCurrentEvent(null);
-                setGameState('home');
             };
 
             return (
@@ -782,7 +755,7 @@
                         
                         <div className="flex-1 overflow-hidden relative z-20 bg-white flex flex-col">
                             {gameState === 'onboarding' ? <RenderOnboarding spinResult={spinResult} spinning={spinning} spinForCharacter={spinForCharacter} updateStats={updateStats} setGameState={setGameState} /> :
-                            gameState === 'home' ? <><StatBar stats={stats} /><RenderHome stats={stats} inventory={inventory} bills={bills} logs={logs} setGameState={setGameState} advanceWeek={advanceWeek} /></> :
+                            gameState === 'home' ? <><StatBar stats={stats} /><RenderHome stats={stats} inventory={inventory} bills={bills} logs={logs} setGameState={setGameState} advanceWeek={advanceWeek} isProcessing={isProcessing} /></> :
                             gameState === 'app_job' ? <><StatBar stats={stats} /><RenderJobs stats={stats} inventory={inventory} addLog={addLog} updateStats={updateStats} startJobInterview={startJobInterview} setGameState={setGameState} /></> :
                             gameState === 'app_house' ? <><StatBar stats={stats} /><RenderHousing stats={stats} inventory={inventory} addLog={addLog} updateStats={updateStats} startQuiz={startQuiz} setInventory={setInventory} setGameState={setGameState} /></> :
                             gameState === 'app_resource' ? <><StatBar stats={stats} /><RenderResource stats={stats} inventory={inventory} addLog={addLog} updateStats={updateStats} startQuiz={startQuiz} setInventory={setInventory} setGameState={setGameState} /></> :
@@ -793,7 +766,11 @@
                             {activeQuiz && (
                                 <Modal title={activeQuiz.title}>
                                     <p className="font-bold mb-4">{activeQuiz.questions[activeQuiz.step].q}</p>
-                                    <div className="space-y-2">{activeQuiz.questions[activeQuiz.step].options.map((o,i)=><button key={i} onClick={()=>{ const cor = i === activeQuiz.questions[activeQuiz.step].ans; if(activeQuiz.step+1 < activeQuiz.questions.length) setActiveQuiz({...activeQuiz, step: activeQuiz.step+1, score: (activeQuiz.score||0)+(cor?1:0)}); else { activeQuiz.cb((activeQuiz.score||0)+(cor?1:0) === activeQuiz.questions.length); setActiveQuiz(null); } }} className="w-full bg-gray-100 p-3 text-left hover:bg-gray-200">{o}</button>)}</div>
+                                    <div className="space-y-2">{activeQuiz.questions[activeQuiz.step].options.map((o,i)=><button key={i} onClick={()=>{
+                                        const cor = i === activeQuiz.questions[activeQuiz.step].ans;
+                                        if(activeQuiz.step+1 < activeQuiz.questions.length) setActiveQuiz({...activeQuiz, step: activeQuiz.step+1, score: (activeQuiz.score||0)+(cor?1:0)});
+                                        else { activeQuiz.cb((activeQuiz.score||0)+(cor?1:0) === activeQuiz.questions.length); setActiveQuiz(null); }
+                                    }} className="w-full bg-gray-100 p-3 text-left hover:bg-gray-200">{o}</button>)}</div>
                                 </Modal>
                             )}
                             
@@ -814,7 +791,7 @@
                             {gameState === 'event' && currentEvent && (
                                 <Modal title="突發事件" color={currentEvent.type === 'risk' ? 'bg-red-500' : 'bg-zinc-200'}>
                                     <div className="text-center">
-                                        <IconAlert size={48} className="mx-auto mb-4"/>
+                                        <GIconAlert size={48} className="mx-auto mb-4"/>
                                         <h2 className="text-2xl font-black mb-2">{currentEvent.title}</h2>
                                         <p className="mb-6 font-bold">{currentEvent.desc}</p>
                                         <button onClick={handleEventConfirm} className="w-full bg-black text-white font-pixel text-xl p-2 border-2 border-white hover:bg-zinc-800 neo-btn">
