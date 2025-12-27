@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>自立大冒險</title>
+    
+    <!-- 引入 Tailwind CSS (樣式庫) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 React 與 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- 引入 Babel (讓瀏覽器看懂 JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #27272a; /* zinc-800 */
+            color: black;
+            font-family: 'Noto Sans TC', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .font-pixel { font-family: 'VT323', monospace; }
+        .font-main { font-family: 'Noto Sans TC', sans-serif; }
+
+        /* Neo-Brutalism Shadow */
+        .neo-shadow { box-shadow: 4px 4px 0px 0px #000; }
+        .neo-shadow-sm { box-shadow: 2px 2px 0px 0px #000; }
+        .neo-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px 0px #000; }
+
+        /* App Styles */
+        .app-header { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .app-card { transition: all 0.2s; }
+        .app-card:active { transform: scale(0.98); }
+
+        /* CRT / Glitch Effects */
+        .scanlines {
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.05));
+            background-size: 100% 4px;
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 40;
+        }
+
+        @keyframes float-up {
+            0% { opacity: 1; transform: translate(-50%, 0); }
+            100% { opacity: 0; transform: translate(-50%, -40px); }
+        }
+        .animate-float { animation: float-up 1.5s ease-out forwards; }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .animate-spin-fast { animation: spin 0.1s linear infinite; }
+
+        @keyframes bounce-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            80% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-bounce-in { animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+
+        @keyframes glitch-anim {
+            0% { transform: translate(0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(-2px, -2px); }
+            60% { transform: translate(2px, 2px); }
+            80% { transform: translate(2px, -2px); }
+            100% { transform: translate(0); }
+        }
+        .glitch-effect {
+            animation: glitch-anim 0.2s infinite;
+            filter: contrast(1.2) brightness(0.9);
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #18181b; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #4ade80; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Icons Component (內建 SVG) ---
+        const IconWrapper = ({ children, size = 24, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+                {children}
+            </svg>
+        );
+
+        // Icons Definition
+        const Home = (p) => <IconWrapper {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></IconWrapper>;
+        const Briefcase = (p) => <IconWrapper {...p}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></IconWrapper>;
+        const Map = (p) => <IconWrapper {...p}><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></IconWrapper>;
+        const CreditCard = (p) => <IconWrapper {...p}><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></IconWrapper>;
+        const AlertTriangle = (p) => <IconWrapper {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></IconWrapper>;
+        const Heart = (p) => <IconWrapper {...p}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></IconWrapper>;
+        const Smile = (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></IconWrapper>;
+        const Shield = (p) => <IconWrapper {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></IconWrapper>;
+        const HelpCircle = (p) => <IconWrapper {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></IconWrapper>;
+        const ShoppingBag = (p) => <IconWrapper {...p}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></IconWrapper>;
+        const X = (p) => <IconWrapper {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></IconWrapper>;
+        const Zap = (p) => <IconWrapper {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></IconWrapper>;
+        const DollarSign = (p) => <IconWrapper {...p}><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></IconWrapper>;
+        const Moon = (p) => <IconWrapper {...p}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></IconWrapper>;
+        const Lock = (p) => <IconWrapper {...p}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></IconWrapper>;
+        const Terminal = (p) => <IconWrapper {...p}><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></IconWrapper>;
+        const CheckCircle = (p) => <IconWrapper {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></IconWrapper>;
+        const ChevronRight = (p) => <IconWrapper {...p}><path d="m9 18 6-6-6-6"/></IconWrapper>;
+        const TrendingUp = (p) => <IconWrapper {...p}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></IconWrapper>;
+        const Receipt = (p) => <IconWrapper {...p}><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17V7"/></IconWrapper>;
+        const ArrowLeft = (p) => <IconWrapper {...p}><line x1="19" x2="5" y1="12" y2="12"/><polyline points="12 19 5 12 12 5"/></IconWrapper>;
+        const Building2 = (p) => <IconWrapper {...p}><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></IconWrapper>;
+        const Landmark = (p) => <IconWrapper {...p}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></IconWrapper>;
+        const Users = (p) => <IconWrapper {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></IconWrapper>;
+        const BookOpen = (p) => <IconWrapper {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></IconWrapper>;
+        const Brain = (p) => <IconWrapper {...p}><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></IconWrapper>;
+        const User = (p) => <IconWrapper {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></IconWrapper>;
+
+        // --- Game Data ---
+        const INITIAL_STATS = {
+            money: 0, 
+            health: 100,
+            mood: 100,
+            security: 50,
+            week: 1, 
+            maxWeeks: 8,
+            age: 18, 
+            ap: 3, 
+            maxAp: 3
+        };
+
+        const CHARACTER_ORIGINS = [
+            { grade: 'A', money: 0, desc: '身無分文', prob: 0.1 },
+            { grade: 'B', money: 2000, desc: '勉強餬口', prob: 0.3 },
+            { grade: 'C', money: 4000, desc: '稍有積蓄', prob: 0.3 },
+            { grade: 'D', money: 6000, desc: '一般小康', prob: 0.2 },
+            { grade: 'E', money: 8000, desc: '資源豐富', prob: 0.1 }
+        ];
+
+        const GENERIC_JOB_QUESTIONS = [
+            { q: '老闆說試用期不給薪水，這樣合法嗎？', options: ['合法', '不合法'], ans: 1, feedback: '勞基法規定試用期也要給薪！' },
+            { q: '面試官要求先繳保證金，你應該？', options: ['繳錢', '拒絕'], ans: 1, feedback: '求職不應先繳錢，這是詐騙常見手法。' },
+            { q: '工作時不小心受傷算公傷嗎？', options: ['算，雇主需負責', '不算，自己不小心'], ans: 0, feedback: '工作中受傷屬於職業災害，雇主有補償責任。' },
+            { q: '國定假日（如中秋節）上班薪水怎麼算？', options: ['跟平常一樣', '雙倍薪資'], ans: 1, feedback: '國定假日出勤應加倍發給工資。' },
+            { q: '為了領薪水，要把存摺印章交給公司保管？', options: ['好', '不行'], ans: 1, feedback: '交出帳戶個資極可能淪為詐騙人頭戶。' },
+            { q: '如果老闆說因為生意不好要扣你薪水？', options: ['共體時艱', '違法，薪水全額給付'], ans: 1, feedback: '經營風險由雇主承擔，不得任意扣薪。' }
+        ];
+
+        const JOBS = [
+            { id: 1, title: '派報生', wage: 183, energy: 20, mood: -10, minAge: 15, desc: '需長時間站立，風吹日曬。', risk: '中暑', apCost: 1, interviews: [{ q: '要在太陽下站很久，可以嗎？', options: ['可以，我有心理準備', '太累了吧，我不行'], ans: 0, feedback: '老闆欣賞你的毅力，錄取！' }] },
+            { id: 2, title: '便利商店', wage: 200, energy: 25, mood: -15, minAge: 16, desc: '需十八般武藝，小心假鈔。', apCost: 1, interviews: [{ q: '為了轉帳，請先把身分證正本交給我保管？', options: ['好的，給店長', '不行，證件不能隨便給人'], ans: 1, feedback: '正確！交出證件可能會變成人頭帳戶。' }] },
+            { id: 3, title: '工地粗工', wage: 300, energy: 45, mood: -20, minAge: 16, desc: '高薪但危險，需注意工安。', apCost: 1, interviews: [{ q: '我們這裡不保勞健保領現金，可以嗎？', options: ['好，現金最實在', '不好，高風險工作更需要保險'], ans: 1, feedback: '正確觀念！沒有勞健保，受傷了求助無門。' }] },
+            { id: 4, title: '補習班工讀', wage: 220, energy: 15, mood: -5, minAge: 18, desc: '環境單純，需細心檢查。', apCost: 1, strictAge: true, interviews: [{ q: '家長有時候講話比較大聲，你能忍耐嗎？', options: ['可以，保持專業', '不行，我會罵回去'], ans: 0, feedback: 'EQ很高，錄取！' }] },
+            { id: 5, title: '餐飲服務', wage: 190, energy: 30, mood: -10, minAge: 16, desc: '供一餐，忙碌時需久站。', apCost: 1, interviews: [{ q: '試用期七天不支薪，通過才開始算薪水？', options: ['可以接受', '違法，試用期也要有薪水'], ans: 1, feedback: '拒絕做白工！勞動權益要堅持。' }] },
+            { id: 6, title: '外送平台', wage: 280, energy: 25, mood: -15, minAge: 18, desc: '需自備機車，車禍風險高。', apCost: 1, strictAge: true, interviews: [{ q: '加入前請先匯款 $2000 買裝備才能開通？', options: ['立刻匯款', '查證官方管道'], ans: 1, feedback: '這是詐騙！小心求職陷阱。' }] },
+            { id: 7, title: '賣場試吃', wage: 195, energy: 20, mood: -5, minAge: 16, desc: '需熱情招呼，面對奧客。', apCost: 1, interviews: [{ q: '剩下的試吃品如果沒發完，要自己買回家？', options: ['好吧', '這不合理，我拒絕'], ans: 1, feedback: '強迫推銷員工是不合理的！' }] },
+            { id: 8, title: '加油站', wage: 185, energy: 25, mood: -15, minAge: 16, desc: '需吸入油氣，輪班制。', apCost: 1, interviews: [{ q: '遇到客人故意刁難，你會怎麼做？', options: ['跟客人吵架', '請站長協助處理'], ans: 1, feedback: '反應得體，錄取。' }] },
+        ];
+
+        const HOUSING = [
+            { id: 'ccsa', title: 'CCSA 自立宿舍', rent: 0, deposit: 0, security: 10, desc: '社工輔導，免租金，需遵守公約。', safe: true, quizType: 'ccsa_interview', area: '機構' },
+            { id: 'rooftop', title: '便宜頂樓加蓋', rent: 5000, deposit: 10000, security: -10, desc: '冬冷夏熱，電費高，違建風險。', safe: false, quizType: 'house_check', area: '市區' },
+            { id: 'basement', title: '地下室雅房', rent: 3500, deposit: 7000, security: -5, desc: '潮濕無窗，空氣差，容易生病。', safe: false, quizType: 'house_check', area: '郊區' },
+            { id: 'shared', title: '溫馨分租雅房', rent: 6500, deposit: 13000, security: 5, desc: '共用衛浴，需遵守生活公約。', safe: true, quizType: 'contract_check', area: '學區' },
+            { id: 'dorm', title: '學校宿舍', rent: 4000, deposit: 4000, security: 15, desc: '便宜安全，但寒暑假需搬離。', safe: true, quizType: 'rule_check', area: '校內' },
+            { id: 'relative', title: '親戚家客廳', rent: 2000, deposit: 0, security: 5, desc: '便宜但毫無隱私，需看人臉色。', safe: true, quizType: 'relative_check', area: '親友' },
+            { id: 'coliving', title: '共生公寓', rent: 7500, deposit: 15000, security: 10, desc: '裝潢美、有社群活動，租金較高。', safe: true, quizType: 'contract_check', area: '市區' },
+            { id: 'studio', title: '獨立電梯套房', rent: 9000, deposit: 18000, security: 20, desc: '隱私極佳，有管理員，負擔重。', safe: true, quizType: 'contract_check', area: '精華區' }
+        ];
+
+        const SHOP_ITEMS = [
+            { id: 'bento', name: '營養便當', price: 100, effect: { health: 15 }, desc: '恢復體力，健康飲食。', payMethod: ['cash'], icon: 'food' },
+            { id: 'health_insurance', name: '繳納健保費', price: 826, effect: { item: 'health_insurance' }, desc: '看病只需付掛號費。', payMethod: ['cash'], icon: 'health' },
+            { id: 'accident_insurance', name: '意外險 (保單)', price: 1500, effect: { item: 'accident_insurance' }, desc: '發生車禍意外時提供理賠。', payMethod: ['cash', 'credit'], icon: 'shield' },
+            { id: 'supplements', name: '維他命B群', price: 600, effect: { health: 5, energyMax: 10 }, desc: '增強免疫力與精神。', payMethod: ['cash'], icon: 'pill' },
+            { id: 'scam_invest', name: '飆股內線消息', price: 3000, effect: { mood: -50 }, desc: '保證獲利200%？老師帶你飛？', payMethod: ['cash'], icon: 'trend', scam: true },
+            { id: 'bubble_tea', name: '手搖飲料', price: 70, effect: { mood: 5, health: -2 }, desc: '快樂水，但喝多不健康。', payMethod: ['cash'], icon: 'drink' },
+            { id: 'clothes', name: '網購新衣', price: 1200, effect: { mood: 15 }, desc: '換季了，買件新衣服犒賞自己。', payMethod: ['cash', 'credit', 'bnpl'], icon: 'shirt' },
+            { id: 'concert', name: '演唱會門票', price: 3500, effect: { mood: 40 }, desc: '偶像的演唱會！心靈大滿足。', payMethod: ['cash', 'credit', 'bnpl'], icon: 'music' },
+            { id: 'phone', name: '新款 iPhone', price: 30000, effect: { mood: 80 }, desc: '拍照漂亮，朋友都在用。', payMethod: ['cash', 'credit', 'bnpl'], icon: 'phone' },
+        ];
+
+        const QUIZ_DB = {
+            ccsa_aid: { 
+                title: 'CCSA 經濟補助', 
+                questions: [
+                    {q: '這筆補助款下來後，可以拿去儲值遊戲嗎？', options:['可以，是我的錢','不行，應用於生活必要開支'], ans:1},
+                    {q: '申請補助通常需要提供什麼證明文件？', options:['只要口頭說就好','相關收據、證明或計畫書'], ans:1},
+                    {q: '如果你的經濟狀況改善了，需要告知社工嗎？', options:['需要，誠實回報','不用，怕補助被取消'], ans:0},
+                    {q: '社工要求你每個月記帳並回傳，你的態度是？', options:['太麻煩了不想做','願意配合，這能幫助我理財'], ans:1},
+                    {q: '如果為了申請補助而編造假的支出理由，會有什麼後果？', options:['沒關係','涉及詐欺與偽造文書，會觸法'], ans:1}
+                ] 
+            },
+            ccsa_interview: { 
+                title: 'CCSA 宿舍評估', 
+                questions: [
+                    {q: '宿舍有門禁時間（例如晚上10點），你能配合嗎？', options:['可以，我會準時回來','不行，我要自由'], ans:0},
+                    {q: '入住期間必須配合「儲蓄計畫」，每個月存錢，你願意嗎？', options:['願意，我想存錢','我的錢我自己管'], ans:0},
+                    {q: '朋友想來借住幾天，你可以隨便帶人回來過夜嗎？', options:['可以，講義氣','不行，需遵守訪客規定'], ans:1},
+                    {q: '宿舍內禁止吸菸飲酒，你可以遵守嗎？', options:['可以','不行，我有我的習慣'], ans:0},
+                    {q: '如果發生室友糾紛，你應該？', options:['直接吵架打架','找社工協助協調'], ans:1}
+                ] 
+            },
+            ccsa_training: {
+                title: '自立培訓課程',
+                questions: [
+                    {q: '課程中，講師提到記帳的重要性，你覺得呢？', options:['沒用，錢不夠就是不夠','有用，能釐清開銷去向'], ans:1},
+                    {q: '遇到職場霸凌時，講師建議怎麼做？', options:['忍氣吞聲','蒐證並尋求管道申訴'], ans:1},
+                    {q: '理財的第一步是什麼？', options:['投資股票','建立緊急預備金'], ans:1}
+                ]
+            },
+            ccsa_counseling: {
+                title: '心理諮商',
+                questions: [
+                    {q: '最近壓力很大，睡不著覺，諮商師問你怎麼了？', options:['不想說，說了也沒用','試著表達自己的焦慮與擔憂'], ans:1},
+                    {q: '諮商過程中，諮商師提到「自我照顧」，意思是？', options:['自私只顧自己','在照顧他人前先照顧好自己的身心'], ans:1},
+                    {q: '覺得心情低落持續兩週以上，可能需要？', options:['多喝水就好','尋求專業醫療或諮商協助'], ans:1}
+                ]
+            },
+            ccsa_group: {
+                title: '支持團體',
+                questions: [
+                    {q: '團體中，有夥伴分享了他失敗的經驗，你應該？', options:['嘲笑他','給予傾聽與鼓勵'], ans:1},
+                    {q: '參加支持團體的主要目的是？', options:['互助與經驗交流','借錢'], ans:0},
+                    {q: '在團體中聽到別人的隱私故事，可以到處宣傳嗎？', options:['可以，很精彩','不行，需遵守保密原則'], ans:1}
+                ]
+            },
+            house_check: { 
+                title: '看房檢核', 
+                questions: [
+                    {q: '頂樓加蓋通常有什麼隱藏缺點？', options:['視野好空氣好','冬冷夏熱且可能有違建拆除風險'], ans:1},
+                    {q: '看房時發現熱水器裝在室內（無強制排氣），安全嗎？', options:['很危險，有一氧化碳中毒風險','沒關係，冬天比較暖'], ans:0},
+                    {q: '牆壁角落有油漆剝落和黑色斑點，可能是？', options:['壁癌與漏水問題','只是髒了擦掉就好'], ans:0},
+                    {q: '這間房間沒有對外窗，會有什麼問題？', options:['隱私很好','通風採光差，容易潮濕發霉'], ans:1},
+                    {q: '馬桶沖水鈕按下後，水流很小且緩慢，表示？', options:['省水裝置','管線老舊或水壓不足'], ans:1}
+                ] 
+            },
+            contract_check: { 
+                title: '租約知識', 
+                questions: [
+                    {q: '房東要求押金一次付「3個月」，這合法嗎？', options:['合法，房東說了算','不合法，法規上限為2個月'], ans:1},
+                    {q: '房東說電費「一度 8 元」，合理嗎？', options:['太貴了，且可能違法','合理，現在電費很貴'], ans:0},
+                    {q: '房東要求看你的身分證，並想「扣留」身分證抵押？', options:['好，為了租房','不行，只能借看不能扣留'], ans:1},
+                    {q: '如果你未滿 18 歲要簽約，通常需要誰的同意？', options:['法定代理人/家長','里長'], ans:0},
+                    {q: '合約中寫「租客不得報稅」，這條款有效嗎？', options:['有效，要遵守','無效，違反法律規定'], ans:1}
+                ] 
+            },
+            finance_help: { 
+                title: '急難救助申請', 
+                questions: [
+                    {q: '急難救助金的申請條件是什麼？', options:['只要存款少就可以','需有急難事實（如傷病、失業）且影響生計'], ans:1},
+                    {q: '申請時通常需要準備什麼？', options:['身分證與相關證明文件','只要人到就好'], ans:0},
+                    {q: '領到救助金後，可以用來買新款手機嗎？', options:['可以','不行，應用於生活急需'], ans:1}
+                ] 
+            },
+            welfare_help: { 
+                title: '社福中心諮詢', 
+                questions: [
+                    {q: '社福中心提供的服務不包含哪一項？', options:['家庭支持與福利諮詢','借錢投資'], ans:1},
+                    {q: '如果生活遇到困難，不知道該找誰求助，可以去哪裡？', options:['地下錢莊','社會福利服務中心'], ans:1},
+                    {q: '社工可以協助你什麼？', options:['直接給你無限的錢','連結資源、提供諮詢與陪伴'], ans:1}
+                ] 
+            },
+            job_test: {
+                title: '職能適性測驗',
+                questions: [
+                    {q: '在職場上遇到不懂的問題，你應該？', options:['裝懂，以免被罵','虛心請教同事或主管'], ans:1},
+                    {q: '對於主管交辦的任務，如果有困難完成，應該？', options:['提早回報並尋求協助','等到最後一刻再說'], ans:0},
+                    {q: '同事在背後說別人壞話，你應該？', options:['加入一起講','保持中立，專注工作'], ans:1},
+                    {q: '上班遲到了，第一時間應該做什麼？', options:['偷偷溜進去','先通知主管並說明預計抵達時間'], ans:1},
+                    {q: '對於公司的機密資料（如客戶名單），應該？', options:['嚴格保密','帶回家參考'], ans:0}
+                ]
+            },
+            rule_check: { 
+                title: '宿舍規範', 
+                questions: [
+                    {q: '寒暑假學校宿舍通常需要做什麼？', options:['可以繼續住','通常需淨空離宿'], ans:1},
+                    {q: '共用冰箱裡的食物被偷吃了，最好的預防方式？', options:['在食物上寫名字','在食物裡加辣'], ans:0},
+                    {q: '在宿舍使用高功率電器（如電磁爐）安全嗎？', options:['安全','可能造成跳電，需確認規定'], ans:1}
+                ] 
+            },
+            relative_check: {
+                title: '寄住禮儀', 
+                questions: [
+                    {q: '住在親戚家，生活作息應該？', options:['隨心所欲，當作自己家','配合親戚家作息，保持禮貌'], ans:1},
+                    {q: '親戚過度詢問你的隱私或工作，你應該？', options:['禮貌簡短回應，保持距離','直接翻臉搬走'], ans:0},
+                    {q: '對於親戚家的水電使用，應該？', options:['盡量節省','盡情使用'], ans:0}
+                ]
+            }
+        };
+
+        const SCENARIOS = {
+            friend_loan: {
+                id: 'friend_loan',
+                title: '義氣相挺？',
+                desc: '國中死黨突然私訊：「兄弟，急用 $3000，下週還你！」',
+                type: 'scam', 
+                checkStat: 'security', 
+                threshold: 50,
+                penalty: { money: -3000, mood: -10 }, 
+                pass: { msg: '婉拒了朋友的請求，守住了錢包。' }
+            },
+            police: { 
+                id: 'police',
+                title: '警察臨檢', 
+                desc: '深夜遊蕩，警察要求出示證件...', 
+                type: 'risk', 
+            },
+            sickness: { 
+                id: 'sickness',
+                title: '突發疾病', 
+                desc: '最近溫差大，你突然發高燒...', 
+                type: 'health_risk', 
+                checkItem: 'health_insurance', 
+                penalty: { money: -1500, health: -10, mood: -20 }, 
+                pass: { money: -150, health: 10 } 
+            },
+            scam_romance: { 
+                id: 'scam_romance',
+                title: '假愛真詐', 
+                desc: '網公網婆借錢：「親愛的，能借我5000應急嗎？」', 
+                type: 'scam', 
+                checkStat: 'security', 
+                threshold: 60, 
+                penalty: { money: -5000, mood: -50 }, 
+                pass: { msg: '警覺異常，直接封鎖' } 
+            },
+            scam_job: { 
+                id: 'scam_job',
+                title: '求職陷阱', 
+                desc: '簡訊：「出租銀行帳戶，日領3000！」', 
+                type: 'scam', 
+                checkStat: 'security', 
+                threshold: 70, 
+                penalty: { money: 0, mood: -80 }, 
+                pass: { msg: '拒絕當人頭戶' } 
+            },
+            accident: { 
+                id: 'accident',
+                title: '交通意外', 
+                desc: '趕路時不小心發生擦撞...', 
+                type: 'accident_risk', 
+                checkItem: 'accident_insurance', 
+                penalty: { money: -5000, health: -20, mood: -40 }, 
+                pass: { money: 0, health: -5 } 
+            }
+        };
+
+        const FloatingTextOverlay = ({ texts }) => (
+            <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
+                {texts.map(ft => (
+                    <div key={ft.id} className={`absolute left-1/2 top-1/2 -translate-x-1/2 text-2xl font-bold font-pixel animate-float whitespace-nowrap ${ft.type === 'success' ? 'text-lime-400' : 'text-red-500'}`} style={{ textShadow: '2px 2px 0 #000' }}>
+                        {ft.text}
+                    </div>
+                ))}
+            </div>
+        );
+
+        const StatBar = ({ stats }) => (
+            <div className="bg-zinc-900 border-b-4 border-black p-2 flex justify-between items-center text-xs font-mono text-white sticky top-0 z-20 neo-shadow-sm">
+                <div className="flex gap-2 items-center">
+                    <span className="bg-red-600 px-2 py-1 text-white font-bold rounded">第 {stats.week} 週</span>
+                    <div className="flex items-center gap-1 text-rose-400"><Heart size={12} /> {stats.health}</div>
+                    <div className="flex items-center gap-1 text-violet-400"><Smile size={12} /> {stats.mood}</div>
+                </div>
+                <div className="flex gap-2 items-center">
+                    <div className="flex items-center gap-1 text-cyan-400"><Shield size={12} /> {stats.security}</div>
+                    <div className="flex gap-1">
+                        {[...Array(stats.maxAp)].map((_, i) => (
+                            <div key={i} className={`w-2 h-4 border border-white ${i < stats.ap ? 'bg-yellow-400' : 'bg-zinc-700'}`}></div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const AppIcon = ({ icon: Icon, label, color, onClick, badge }) => (
+            <button onClick={onClick} className="aspect-square bg-zinc-100 border-2 border-black neo-shadow hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all flex flex-col items-center justify-center gap-1 relative group neo-btn">
+                <div className={`p-3 rounded-none border-2 border-black ${color} text-black`}>
+                    <Icon size={24} strokeWidth={2.5} />
+                </div>
+                <span className="font-bold text-xs text-black font-main tracking-wide mt-2">{label}</span>
+                {badge && <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center border-2 border-black rounded-full animate-bounce">!</div>}
+            </button>
+        );
+
+        const ModalWrapper = ({ title, children, color = 'bg-white' }) => (
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className={`${color} w-full max-w-sm border-4 border-black p-4 neo-shadow relative animate-bounce-in`}>
+                    <div className="bg-black text-white px-2 py-1 inline-block font-pixel text-lg mb-4 transform -translate-y-6 -rotate-2 border-2 border-white">
+                        {title}
+                    </div>
+                    {children}
+                </div>
+            </div>
+        );
+
+        function App() {
+            const [gameState, setGameState] = useState('onboarding'); 
+            const [stats, setStats] = useState(INITIAL_STATS);
+            const [inventory, setInventory] = useState({ badges: [], items: [], hasHouse: false, houseName: '' });
+            const [bills, setBills] = useState([]); 
+            const [floatingTexts, setFloatingTexts] = useState([]); 
+            const [currentEvent, setCurrentEvent] = useState(null);
+            const [activeQuiz, setActiveQuiz] = useState(null); 
+            const [purchaseModal, setPurchaseModal] = useState(null); 
+            const [logs, setLogs] = useState(['系統初始化完成...']);
+            const [screenEffect, setScreenEffect] = useState('');
+            
+            const [spinning, setSpinning] = useState(false);
+            const [spinResult, setSpinResult] = useState(null);
+
+            const showFloat = (text, type = 'neutral') => {
+                const id = Date.now() + Math.random();
+                setFloatingTexts(prev => [...prev, { id, text, type }]);
+                setTimeout(() => {
+                    setFloatingTexts(prev => prev.filter(ft => ft.id !== id));
+                }, 1500);
+            };
+
+            const updateStats = (changes) => {
+                setStats(prev => {
+                    const newStats = { ...prev };
+                    if (changes.money !== undefined) {
+                        const diff = changes.money;
+                        showFloat(`${diff >= 0 ? '+' : ''}$${diff}`, diff >= 0 ? 'success' : 'danger');
+                        newStats.money += diff;
+                    }
+                    if (changes.health !== undefined) {
+                        showFloat(`${changes.health >= 0 ? '+' : ''}體力`, changes.health >= 0 ? 'success' : 'danger');
+                        newStats.health = Math.min(100, Math.max(0, newStats.health + changes.health));
+                    }
+                    if (changes.mood !== undefined) {
+                        showFloat(`${changes.mood >= 0 ? '+' : ''}心情`, changes.mood >= 0 ? 'success' : 'danger');
+                        newStats.mood = Math.min(100, Math.max(0, newStats.mood + changes.mood));
+                    }
+                    if (changes.security !== undefined) {
+                        showFloat(`${changes.security >= 0 ? '+' : ''}資安`, changes.security >= 0 ? 'success' : 'danger');
+                        newStats.security = Math.min(100, Math.max(0, newStats.security + changes.security));
+                    }
+                    if (changes.ap !== undefined) {
+                        if (changes.ap < 0) showFloat(`${changes.ap} AP`, 'danger');
+                        newStats.ap = Math.max(0, newStats.ap + changes.ap);
+                    }
+                    if (changes.maxAp !== undefined) {
+                        showFloat(`體力上限 +${changes.maxAp}`, 'success');
+                        newStats.maxAp += changes.maxAp;
+                    }
+                    return newStats;
+                });
+            };
+
+            useEffect(() => {
+                if (stats.week > stats.maxWeeks) {
+                    setGameState('ending');
+                    return;
+                }
+                if (stats.mood < 30 || stats.security < 30) {
+                    setScreenEffect('glitch');
+                    const timer = setTimeout(() => setScreenEffect(''), 500);
+                    return () => clearTimeout(timer);
+                } else {
+                    setScreenEffect('');
+                }
+            }, [stats.mood, stats.security, stats.week, stats.maxWeeks]); 
+
+            const spinForCharacter = () => {
+                setSpinning(true);
+                setTimeout(() => {
+                    const rand = Math.random();
+                    let accumulatedProb = 0;
+                    let selectedOrigin = CHARACTER_ORIGINS[0];
+                    for (let origin of CHARACTER_ORIGINS) {
+                        accumulatedProb += origin.prob;
+                        if (rand <= accumulatedProb) {
+                            selectedOrigin = origin;
+                            break;
+                        }
+                    }
+                    const randomAge = Math.floor(Math.random() * 5) + 15;
+                    setSpinResult({ ...selectedOrigin, age: randomAge });
+                    setSpinning(false);
+                    setStats(prev => ({ ...prev, money: selectedOrigin.money, age: randomAge }));
+                }, 2000);
+            };
+
+            const advanceWeek = () => {
+                let livingCost = 1500;
+                if (inventory.hasHouse && inventory.houseName !== 'CCSA 自立宿舍') livingCost += 500;
+                
+                let billTotal = 0;
+                const newBills = bills.map(bill => {
+                    if (bill.remainingWeeks > 0) {
+                        billTotal += bill.amount;
+                        return { ...bill, remainingWeeks: bill.remainingWeeks - 1 };
+                    }
+                    return bill;
+                }).filter(bill => bill.remainingWeeks > 0);
+                
+                setStats(prev => {
+                    const newStats = { ...prev };
+                    const totalDeduction = livingCost + billTotal;
+                    newStats.money -= totalDeduction;
+                    newStats.week += 1;
+                    newStats.ap = newStats.maxAp; 
+                    newStats.mood = Math.max(0, newStats.mood - 5);
+                    newStats.security = Math.max(0, newStats.security - 2);
+                    return newStats;
+                });
+                setBills(newBills);
+
+                const totalCost = livingCost + billTotal;
+                addLog(`第 ${stats.week} 週結算。生活支出 -$${totalCost}`);
+                addLog(`生活壓力累積: 心情 -5, 資安風險 -2`);
+                showFloat(`-$${totalCost}`, 'danger');
+
+                if ((stats.money - totalCost) < 0 && inventory.hasHouse && inventory.houseName !== 'CCSA 自立宿舍') {
+                    setTimeout(() => {
+                        setInventory(prev => ({ ...prev, hasHouse: false, houseName: '' }));
+                        addLog('【強制驅逐】因積欠房租，你被房東趕出來了！押金被沒收。');
+                        updateStats({ mood: -30, security: -10 });
+                    }, 500);
+                }
+
+                setTimeout(() => {
+                    triggerRandomEvent();
+                }, 1000);
+            };
+
+            const triggerRandomEvent = () => {
+                const roll = Math.random();
+                let eventPool = [
+                    { key: 'friend_loan', weight: 15 },
+                    { key: 'scam_romance', weight: 15 },
+                    { key: 'scam_job', weight: 15 },
+                    { key: 'accident', weight: 10 },
+                    { key: 'sickness', weight: 10 }
+                ];
+
+                if (!inventory.hasHouse) {
+                    eventPool.push({ key: 'police', weight: 40 }); 
+                }
+                
+                if (stats.health < 50) {
+                    eventPool.find(e => e.key === 'sickness').weight += 30;
+                }
+
+                if (roll > 0.4) { 
+                    const totalWeight = eventPool.reduce((sum, e) => sum + e.weight, 0);
+                    let randomWeight = Math.random() * totalWeight;
+                    
+                    let selectedEventKey = null;
+                    for (let e of eventPool) {
+                        if (randomWeight < e.weight) {
+                            selectedEventKey = e.key;
+                            break;
+                        }
+                        randomWeight -= e.weight;
+                    }
+                    
+                    if (selectedEventKey && SCENARIOS[selectedEventKey]) {
+                        setCurrentEvent(SCENARIOS[selectedEventKey]);
+                        setGameState('event');
+                    } else {
+                        setGameState('home');
+                    }
+                } else {
+                    setGameState('home');
+                }
+            };
+
+            const addLog = (msg) => setLogs(prev => [`> ${msg}`, ...prev].slice(0, 5));
+
+            const startJobInterview = (job) => {
+                const mixedPool = [...job.interviews, ...GENERIC_JOB_QUESTIONS];
+                updateStats({ ap: -1 });
+                
+                startQuiz('job_interview', (passed) => {
+                    if (passed) {
+                        updateStats({ 
+                            money: job.wage * 8, 
+                            health: -job.energy, 
+                            mood: job.mood       
+                        });
+                        addLog(`工作完成！薪資 +$${job.wage*8} (心情${job.mood})`);
+                    } else {
+                        addLog(`面試失敗，或許你需要加強勞權知識。`);
+                        updateStats({ mood: -10 });
+                    }
+                }, mixedPool);
+            };
+
+            const startQuiz = (type, cb, customQs) => {
+                const qData = QUIZ_DB[type] || { title: '檢核', questions: customQs || [] };
+                if (!qData.questions || qData.questions.length < 3) { 
+                    cb(true); 
+                    return; 
+                }
+                const qs = shuffleArray(qData.questions).slice(0,3);
+                setActiveQuiz({ ...qData, questions: qs, step: 0, cb });
+            };
+
+            const shuffleArray = (arr) => {
+                if (!Array.isArray(arr)) return [];
+                return [...arr].sort(() => Math.random() - 0.5);
+            };
+
+            const openPurchaseModal = (item) => {
+                setPurchaseModal(item);
+            };
+
+            const handlePurchase = (method) => {
+                const item = purchaseModal;
+                setPurchaseModal(null);
+
+                let cost = item.price;
+                let logSuffix = "";
+
+                if (item.scam) {
+                    if (method === 'cash') {
+                        if (stats.money < cost) {
+                            alert("現金不足！但這可能是件好事...");
+                            return;
+                        }
+                        updateStats({ money: -cost, mood: item.effect.mood });
+                        alert("⚠️ 警告：這是一個投資詐騙！你的錢被捲款潛逃了，什麼都沒拿到。");
+                        addLog(`遭遇投資詐騙，損失 $${cost}。`);
+                    }
+                    setGameState('home');
+                    return;
+                }
+
+                if (method === 'cash') {
+                    if (stats.money < cost) {
+                        alert("現金不足！");
+                        return;
+                    }
+                    updateStats({ money: -cost });
+                    logSuffix = "(現金)";
+                } else if (method === 'credit') {
+                    setBills(prev => [...prev, { name: `${item.name}(卡費)`, amount: cost, remainingWeeks: 1 }]);
+                    logSuffix = "(刷卡)";
+                    addLog("【信用消費】刷卡雖然爽，但下週帳單就來了。");
+                } else if (method === 'bnpl') {
+                    const totalWithInterest = Math.floor(cost * 1.2);
+                    const weeklyPay = Math.floor(totalWithInterest / 4);
+                    setBills(prev => [...prev, { name: `${item.name}(分期)`, amount: weeklyPay, remainingWeeks: 4 }]);
+                    logSuffix = "(無卡分期)";
+                    addLog(`【財務風險】使用 BNPL，總價變為 $${totalWithInterest} (原價 $${cost})。`);
+                }
+
+                updateStats({ ...item.effect });
+                if (item.effect.item) {
+                    setInventory(prev => ({...prev, items: [...prev.items, item.effect.item]}));
+                }
+                addLog(`購買 ${item.name} ${logSuffix}`);
+                setGameState('home');
+            };
+
+            const handleEventConfirm = () => {
+                if (!currentEvent) return;
+
+                let outcome = {};
+                let message = "";
+
+                if (currentEvent.id === 'police') {
+                    const hasCard = inventory.items.includes('good_citizen_card');
+                    const isAdult = stats.age >= 18;
+
+                    if (isAdult && hasCard) {
+                        outcome = {}; 
+                        message = "出示良民證，警察確認無誤後放行。";
+                    } else if (isAdult && !hasCard) {
+                        outcome = { ap: -1, mood: -15 };
+                        message = "滿18歲未帶證件，被盤查許久。(AP -1, 心情 -15)";
+                    } else {
+                        outcome = { ap: -1, mood: -20 };
+                        message = "未滿18歲深夜遊蕩，被帶回警局通知家長。(AP -1, 心情 -20)";
+                    }
+                } 
+                else if (currentEvent.type === 'health_risk' || currentEvent.type === 'accident_risk') {
+                    if (currentEvent.checkItem && inventory.items.includes(currentEvent.checkItem)) {
+                        outcome = currentEvent.pass; 
+                        message = `幸好有${SHOP_ITEMS.find(i=>i.effect.item===currentEvent.checkItem)?.name || '保險'}，獲得理賠減輕損失。`;
+                    } else {
+                        outcome = currentEvent.penalty; 
+                        message = `發生${currentEvent.title}，因無保險需全額負擔！`;
+                    }
+                }
+                else if (currentEvent.type === 'scam') {
+                    if (currentEvent.checkStat && stats[currentEvent.checkStat] > currentEvent.threshold) {
+                        outcome = {}; 
+                        message = currentEvent.pass.msg || "你機警地識破了詐騙。";
+                    } else {
+                        outcome = currentEvent.penalty; 
+                        message = `慘遭${currentEvent.title}，損失慘重...`;
+                    }
+                }
+                else {
+                    outcome = currentEvent.penalty || {};
+                    message = "事件結束。";
+                }
+
+                updateStats(outcome);
+                addLog(message);
+                setCurrentEvent(null);
+                setGameState('home');
+            };
+
+            const renderEnding = () => {
+                const isSuccess = stats.money >= 0 && stats.health > 0;
+                const hasHouse = inventory.hasHouse;
+                const achievements = [];
+
+                if (hasHouse) achievements.push('有殼蝸牛');
+                if (inventory.items.includes('good_citizen_card')) achievements.push('良民模範');
+                if (inventory.items.includes('accompaniment_card')) achievements.push('善用資源');
+                if (stats.money > 15000) achievements.push('小小富翁');
+                if (stats.mood > 80) achievements.push('樂天派');
+
+                let title = '';
+                let message = '';
+                let color = '';
+
+                if (stats.money < 0) {
+                    title = '負債累累的倖存者';
+                    message = '這段旅程真的很不容易。雖然現在背負著債務，但請記得，這只是模擬。現實中，CCSA 與許多社福機構隨時準備伸出援手。不要放棄，重新規劃財務，你一定能度過難關！';
+                    color = 'bg-zinc-200';
+                } else if (!hasHouse) {
+                    title = '漂泊的旅人';
+                    message = '雖然還沒有固定的住所，但你已經學會了如何在這個城市生存。存下一筆錢是很好的開始，下一步，試著為自己找個家吧！';
+                    color = 'bg-blue-200';
+                } else if (stats.money < 5000) {
+                    title = '勉強溫飽的房客';
+                    message = '你有了住處，雖然手頭有點緊，但至少不用擔心風吹日曬。自立的第一步已經穩固，繼續加油！';
+                    color = 'bg-orange-200';
+                } else {
+                    title = '自立自強的模範生';
+                    message = '太棒了！你不僅有了安身之處，還累積了可觀的積蓄。你的自立之路充滿希望，繼續保持這份智慧與韌性！';
+                    color = 'bg-yellow-300';
+                }
+
+                return (
+                    <div className={`flex flex-col h-full ${color} p-6 font-main overflow-y-auto`}>
+                        <div className="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] mb-6 text-center animate-bounce-in">
+                            <h1 className="text-4xl font-black font-pixel mb-2">{isSuccess ? '恭喜通關' : '遊戲結束'}</h1>
+                            <h2 className="text-2xl font-bold text-violet-600 mb-4">{title}</h2>
+                            <p className="text-slate-600 leading-relaxed text-sm text-left">{message}</p>
+                        </div>
+
+                        <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-4">
+                            <h3 className="font-bold border-b-2 border-black pb-2 mb-2 flex items-center gap-2">
+                                <CreditCard size={20}/> 最終資產
+                            </h3>
+                            <div className="text-right">
+                                <span className={`text-4xl font-black font-pixel ${stats.money < 0 ? 'text-red-500' : 'text-green-600'}`}>
+                                ${stats.money}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-6 flex-1">
+                            <h3 className="font-bold border-b-2 border-black pb-2 mb-2 flex items-center gap-2">
+                                <CheckCircle size={20}/> 解鎖成就
+                            </h3>
+                            <div className="flex flex-wrap gap-2">
+                                {achievements.length > 0 ? achievements.map(ach => (
+                                <span key={ach} className="bg-yellow-200 border-2 border-black px-2 py-1 text-xs font-bold rounded-full">
+                                    {ach}
+                                </span>
+                                )) : <span className="text-slate-400 text-xs">無特殊成就</span>}
+                            </div>
+                        </div>
+
+                        <button 
+                            onClick={()=>window.location.reload()} 
+                            className="w-full bg-black text-white text-xl font-bold py-4 border-4 border-white hover:bg-zinc-800 shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all">
+                            再來一局 (RESTART)
+                        </button>
+                    </div>
+                );
+            };
+
+            const renderOnboarding = () => (
+                <div className="flex flex-col items-center justify-center h-full p-6 bg-zinc-200 text-black font-main">
+                    {!spinResult ? (
+                        <>
+                            <h1 className="text-4xl font-black mb-2 font-pixel tracking-tighter text-center">自立大冒險</h1>
+                            <p className="text-zinc-600 mb-12 font-bold text-center">命運轉盤：決定你的出身</p>
+                            
+                            <div className={`w-48 h-48 rounded-full border-8 border-black bg-white relative flex items-center justify-center mb-8 neo-shadow overflow-hidden ${spinning ? 'animate-spin-fast' : ''}`}>
+                                <div className="absolute inset-0 bg-[conic-gradient(at_center,_var(--tw-gradient-stops))] from-red-400 via-yellow-400 to-blue-400 opacity-50"></div>
+                                <HelpCircle size={64} className="text-black z-10"/>
+                                <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[20px] border-t-black z-20"></div>
+                            </div>
+
+                            <button onClick={spinForCharacter} disabled={spinning} className="w-full bg-black text-white text-xl font-bold py-4 border-4 border-transparent hover:border-white neo-shadow disabled:opacity-50">
+                                {spinning ? '命運轉動中...' : '開始轉動 (START)'}
+                            </button>
+                        </>
+                    ) : (
+                        <div className="w-full animate-bounce-in">
+                            <div className="bg-white border-4 border-black p-6 neo-shadow mb-6 text-center">
+                                <h2 className="text-2xl font-black mb-4 border-b-2 border-black pb-2">身分確認</h2>
+                                <div className="grid grid-cols-2 gap-4 text-left mb-4">
+                                    <div>
+                                        <span className="text-xs text-zinc-500 block">年齡</span>
+                                        <span className="text-3xl font-pixel font-bold">{spinResult.age} 歲</span>
+                                    </div>
+                                    <div>
+                                        <span className="text-xs text-zinc-500 block">初始存款</span>
+                                        <span className="text-3xl font-pixel font-bold">${spinResult.money}</span>
+                                    </div>
+                                </div>
+                                <div className="bg-zinc-100 p-2 border-2 border-black text-sm">
+                                    <span className="font-bold">等級 {spinResult.grade}：</span> {spinResult.desc}
+                                </div>
+                            </div>
+
+                            <div className="bg-white border-4 border-black p-4 w-full neo-shadow mb-4">
+                                <h3 className="font-bold mb-2 flex items-center gap-2 text-sm"><Lock size={16}/> 第一關：設定手機密碼</h3>
+                                <div className="space-y-2">
+                                    <button onClick={() => { updateStats({ security: -20 }); setGameState('home'); }} className="w-full p-2 bg-zinc-100 border-2 border-black hover:bg-red-100 text-left text-sm">1. 123456 (方便好記)</button>
+                                    <button onClick={() => { updateStats({ security: 10 }); setGameState('home'); }} className="w-full p-2 bg-zinc-100 border-2 border-black hover:bg-green-100 text-left text-sm">2. 開啟 2FA (安全驗證)</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+
+            const renderHome = () => (
+                <div className="h-full bg-zinc-800 flex flex-col relative overflow-hidden font-main">
+                    <div className="bg-zinc-100 p-4 border-b-4 border-black mb-4 neo-shadow relative z-10">
+                        <div className="flex justify-between items-end">
+                            <div>
+                                <p className="text-xs font-bold text-zinc-500">可用餘額 (FUNDS)</p>
+                                <p className="text-4xl font-black font-pixel text-black tracking-tight flex items-center">
+                                    <span className="text-lg mr-1">$</span>{stats.money}
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-xs font-bold text-zinc-500">年齡: {stats.age}</p>
+                                {bills.length > 0 && <span className="text-xs bg-red-500 text-white px-1 font-bold animate-pulse">未繳帳單</span>}
+                            </div>
+                        </div>
+                    </div>
+
+                    {stats.mood < 30 && (
+                        <div className="mx-4 mb-2 bg-red-500 text-white p-2 text-sm font-bold text-center animate-pulse rounded border-2 border-red-700 shadow-lg">
+                        ⚠️ 心情指數過低！請使用「休息」或購買娛樂項目！
+                        </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4 px-4 mb-auto z-10">
+                        <AppIcon icon={Home} label="租屋中心" color="bg-orange-400" onClick={() => setGameState('app_house')} badge={!inventory.hasHouse} />
+                        <AppIcon icon={Briefcase} label="人力銀行" color="bg-blue-400" onClick={() => setGameState('app_job')} />
+                        <AppIcon icon={Map} label="資源地圖" color="bg-emerald-400" onClick={() => setGameState('app_resource')} />
+                        <AppIcon icon={CreditCard} label="財務管家" color="bg-violet-400" onClick={() => setGameState('app_finance')} />
+                        
+                        <div className="col-span-2 mt-2">
+                            <button onClick={advanceWeek} className="w-full bg-zinc-900 text-white border-2 border-black p-3 font-bold flex items-center justify-center gap-2 neo-shadow neo-btn">
+                                <Moon size={18} className="text-yellow-400"/>
+                                {stats.ap === 0 ? '體力耗盡...休息 (下一週)' : '結束本週 (休息)'}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="bg-zinc-900 p-4 border-t-4 border-zinc-700 z-10 h-64 flex flex-col shadow-2xl">
+                        <div className="text-green-400 font-pixel font-bold mb-2 border-b border-zinc-700 pb-1 flex justify-between">
+                            <span>系統通知 (SYSTEM LOGS)</span>
+                            <span className="animate-pulse text-green-500">● ONLINE</span>
+                        </div>
+                        <div className="text-green-400 font-mono text-lg leading-relaxed overflow-y-auto flex-1 font-bold custom-scroll">
+                            {logs.map((log, i) => <div key={i} className="mb-2 border-l-4 border-green-700 pl-2">{log}</div>)}
+                        </div>
+                    </div>
+
+                    <div className="absolute inset-0 z-0 flex items-center justify-center opacity-10 pointer-events-none">
+                        <Terminal size={200} />
+                    </div>
+                </div>
+            );
+
+            const renderJobs = () => (
+                <div className="h-full flex flex-col bg-slate-50 font-main">
+                    <div className="bg-blue-600 text-white p-3 shadow-md flex items-center gap-3 app-header z-10">
+                        <button onClick={() => setGameState('home')}><ChevronRight className="rotate-180"/></button>
+                        <div>
+                            <h2 className="font-bold text-lg leading-tight">人力銀行</h2>
+                            <p className="text-xs text-blue-100">找工作，開啟自立人生</p>
+                        </div>
+                    </div>
+                    
+                    <div className="p-3 space-y-3 overflow-y-auto flex-1">
+                        <div className="flex justify-between items-center px-1">
+                            <span className="text-sm font-bold text-slate-700">推薦職缺 ({JOBS.length})</span>
+                            <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-bold">
+                                AP 剩餘: {stats.ap}
+                            </span>
+                        </div>
+
+                        {JOBS.map(job => {
+                            const isAgeOk = stats.age >= job.minAge || (inventory.items.includes('accompaniment_card') && !job.strictAge);
+                            
+                            return (
+                            <div key={job.id} className={`bg-white p-4 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-2 ${stats.ap < job.apCost ? 'opacity-60' : ''}`}>
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h3 className="font-bold text-lg text-slate-800">{job.title}</h3>
+                                        <div className="flex gap-2 mt-1">
+                                            <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100">時薪 ${job.wage}</span>
+                                            {job.minAge > 15 && <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded">{job.minAge}+ 歲</span>}
+                                        </div>
+                                    </div>
+                                    {job.risk && <AlertTriangle size={16} className="text-orange-400" />}
+                                </div>
+                                <p className="text-sm text-slate-500 line-clamp-2">{job.desc}</p>
+                                <button 
+                                    disabled={stats.ap < job.apCost || !isAgeOk}
+                                    onClick={() => {
+                                        if (stats.ap < job.apCost) addLog('太累了，無法面試！');
+                                        else startJobInterview(job);
+                                    }}
+                                    className="mt-2 w-full bg-blue-600 text-white font-bold py-2 rounded-md hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors text-sm">
+                                    {!isAgeOk ? '資格不符 (需社工陪同或年齡)' : `面試應徵 (消耗 ${job.apCost} AP)`}
+                                </button>
+                            </div>
+                        )})}
+                        <button onClick={() => setGameState('home')} className="w-full mt-6 bg-slate-200 text-slate-600 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition-colors">
+                            <ArrowLeft size={18}/> 回到首頁
+                        </button>
+                    </div>
+                </div>
+            );
+
+            const renderHousing = () => (
+                <div className="h-full flex flex-col bg-slate-50 font-main">
+                    <div className="bg-orange-500 text-white p-3 shadow-md flex items-center gap-3 app-header z-10">
+                        <button onClick={() => setGameState('home')}><ChevronRight className="rotate-180"/></button>
+                        <div>
+                            <h2 className="font-bold text-lg leading-tight">好屋租房網</h2>
+                            <p className="text-xs text-orange-100">全台最大的租屋平台</p>
+                        </div>
+                    </div>
+
+                    <div className="p-3 space-y-3 overflow-y-auto flex-1">
+                        {inventory.hasHouse ? (
+                            <div className="bg-white p-6 rounded-lg shadow-sm border border-green-200 text-center m-4">
+                                <CheckCircle size={48} className="mx-auto text-green-500 mb-3"/>
+                                <h3 className="font-bold text-lg text-slate-800">您目前已入住</h3>
+                                <p className="text-green-600 font-bold text-xl my-2">{inventory.houseName}</p>
+                                <p className="text-xs text-slate-400">下期房租將自動扣繳</p>
+                            </div>
+                        ) : (
+                            <>
+                                {HOUSING.map(house => (
+                                    <div key={house.id} className="bg-white p-0 rounded-lg border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                                        <div className={`h-24 w-full flex items-center justify-center text-white font-bold text-lg ${house.id === 'ccsa' ? 'bg-green-400' : house.rent < 4000 ? 'bg-slate-400' : 'bg-orange-300'}`}>
+                                            {house.title.substring(0,2)}屋況照
+                                        </div>
+                                        <div className="p-3">
+                                            <div className="flex justify-between items-center mb-1">
+                                                <h3 className="font-bold text-slate-800">{house.title}</h3>
+                                                <span className="text-lg font-bold text-orange-600">${house.rent}<span className="text-xs text-slate-400 font-normal">/月</span></span>
+                                            </div>
+                                            <div className="flex gap-2 mb-2">
+                                                <span className="text-xs text-slate-500 bg-slate-100 px-1 rounded">{house.area || '市區'}</span>
+                                                <span className="text-xs text-slate-500 bg-slate-100 px-1 rounded">押金 ${house.deposit}</span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 mb-3">{house.desc}</p>
+                                            <button 
+                                                onClick={() => {
+                                                    if (stats.ap < 1) { addLog('太累了，無法預約看房'); return; }
+                                                    if (stats.age < 18 && !inventory.items.includes('accompaniment_card') && house.id !== 'ccsa') {
+                                                        alert('未滿18歲且無社工陪同，無法簽約租房！請先至資源地圖申請社工陪同。');
+                                                        return;
+                                                    }
+                                                    updateStats({ ap: -1 });
+                                                    startQuiz(house.quizType, (passed) => {
+                                                        if (passed) {
+                                                            if (stats.money >= house.deposit || house.rent === 0) {
+                                                                updateStats({ money: -house.deposit, security: house.security });
+                                                                setInventory(p => ({...p, hasHouse: true, houseName: house.title}));
+                                                                addLog(`簽約成功！入住 ${house.title} (資安${house.security})`);
+                                                                setGameState('home');
+                                                            } else { addLog('存款不足支付押金！'); }
+                                                        } else { addLog('檢核未通過，為了安全先不租。'); }
+                                                    });
+                                                }}
+                                                className="w-full bg-orange-500 text-white font-bold py-2 rounded hover:bg-orange-600 text-sm flex items-center justify-center gap-1">
+                                                <Map size={14}/> 預約看房 (消耗 1 AP)
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </>
+                        )}
+                        <button onClick={() => setGameState('home')} className="w-full mt-6 bg-slate-200 text-slate-600 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition-colors">
+                            <ArrowLeft size={18}/> 回到首頁
+                        </button>
+                    </div>
+                </div>
+            );
+
+            const renderResourceApp = () => (
+                <div className="flex flex-col h-full bg-slate-50 font-main">
+                    <div className="bg-emerald-600 text-white p-3 shadow-md flex items-center gap-3 app-header z-10">
+                        <button onClick={() => setGameState('home')}><ChevronRight className="rotate-180"/></button>
+                        <div>
+                            <h2 className="font-bold text-lg">資源地圖</h2>
+                            <p className="text-xs text-emerald-100">尋求協助與補助</p>
+                        </div>
+                    </div>
+                    <div className="p-4 flex flex-col items-center flex-1 space-y-4 overflow-y-auto">
+                        <div className="w-full bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="bg-blue-100 p-2 rounded-lg text-blue-600"><Briefcase size={20}/></div>
+                                <h3 className="font-bold text-slate-800">就業服務站</h3>
+                            </div>
+                            <p className="text-sm text-slate-500 mb-3">提供職能測驗、就業獎勵諮詢與工作機會</p>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={() => {
+                                        startQuiz('job_test', (passed) => {
+                                            if (passed) {
+                                                updateStats({ money: 1000 });
+                                                addLog('完成職能測驗，獲得就業獎勵金 $1000。');
+                                                setGameState('home');
+                                            } else { addLog('職能觀念有待加強，建議重新測驗。'); }
+                                        });
+                                    }} className="bg-blue-500 text-white py-2 rounded-lg font-bold hover:bg-blue-600 text-sm">職能測驗 (領$1000)</button>
+                                <button onClick={() => {
+                                        setGameState('app_job');
+                                        updateStats({ ap: 1 });
+                                        addLog('就服站提供就業資訊，AP +1');
+                                    }} className="bg-blue-100 text-blue-700 py-2 rounded-lg font-bold hover:bg-blue-200 text-sm">查看就業機會</button>
+                            </div>
+                        </div>
+
+                        <div className="w-full bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="bg-emerald-100 p-2 rounded-lg text-emerald-600"><Building2 size={20}/></div>
+                                <h3 className="font-bold text-slate-800">社會福利中心</h3>
+                            </div>
+                            <p className="text-sm text-slate-500 mb-3">家庭支持、急難救助諮詢窗口</p>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={() => {
+                                    startQuiz('welfare_help', (passed) => {
+                                        if (passed) {
+                                            addLog('諮詢完成，社工已了解您的狀況並提供物資包。');
+                                            updateStats({ health: 20 });
+                                        }
+                                    });
+                                }} className="bg-emerald-100 text-emerald-700 py-2 rounded-lg font-bold text-sm">社工諮詢</button>
+                                <button disabled={stats.money >= 2000} onClick={() => {
+                                    startQuiz('finance_help', (passed) => {
+                                        if (passed) {
+                                            updateStats({ money: 5000 });
+                                            addLog('急難救助申請通過，撥款 $5000。');
+                                            setGameState('home');
+                                        } else { addLog('資格不符或觀念有誤。'); }
+                                    });
+                                }} className={`py-2 rounded-lg font-bold text-sm ${stats.money >= 2000 ? 'bg-slate-200 text-slate-400' : 'bg-emerald-500 text-white'}`}>申請急難救助</button>
+                            </div>
+                        </div>
+
+                        <div className="w-full bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="bg-orange-100 p-2 rounded-lg text-orange-600"><Home size={20}/></div>
+                                <h3 className="font-bold text-slate-800">CCSA 自立服務</h3>
+                            </div>
+                            <p className="text-sm text-slate-500 mb-3">全方位自立支持體系</p>
+                            <div className="grid grid-cols-2 gap-2 mb-2">
+                                <button onClick={() => {
+                                        startQuiz('ccsa_aid', (passed) => {
+                                            if (passed) {
+                                                updateStats({ money: 3000 });
+                                                addLog('申請通過，獲得 CCSA 補助款 $3000。');
+                                                setGameState('home');
+                                            } else { addLog('申請未通過，請再確認補助規範。'); }
+                                        });
+                                    }} className="bg-orange-500 text-white py-2 rounded-lg font-bold text-sm">經濟補助</button>
+                                <button onClick={() => {
+                                    if (stats.ap < 1) { addLog('體力不足，無法申請。'); return; }
+                                    if (inventory.items.includes('accompaniment_card')) { addLog('您已持有社工陪同卡。'); return; }
+                                    updateStats({ ap: -1 });
+                                    setInventory(prev => ({...prev, items: [...prev.items, 'accompaniment_card']}));
+                                    addLog('申請成功！獲得「社工陪同卡」。可用於租屋簽約與特定工作。');
+                                }} className="bg-red-500 text-white py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-1"><Users size={14}/> 申請社工陪同</button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <button onClick={() => {
+                                        startQuiz('ccsa_counseling', (passed) => {
+                                            if (passed) {
+                                                updateStats({ mood: 30, health: 10 });
+                                                addLog('完成心理諮商，身心放鬆了許多。');
+                                                setGameState('home');
+                                            }
+                                        });
+                                    }} className="bg-pink-500 text-white py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-1"><Brain size={14}/> 心理諮商</button>
+                                <button onClick={() => {
+                                        startQuiz('ccsa_training', (passed) => {
+                                            if (passed) {
+                                                updateStats({ maxAp: 1, mood: 10 });
+                                                addLog('完成自立培訓，能力提升！每週 AP +1。');
+                                                setGameState('home');
+                                            }
+                                        });
+                                    }} className="bg-blue-500 text-white py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-1"><BookOpen size={14}/> 自立培訓</button>
+                            </div>
+                        </div>
+
+                        <div className="w-full bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <div className="flex items-center gap-2 mb-2">
+                                <div className="bg-slate-100 p-2 rounded-lg text-slate-600"><Landmark size={20}/></div>
+                                <h3 className="font-bold text-slate-800">警察局</h3>
+                            </div>
+                            <button onClick={() => {
+                                if (inventory.items.includes('good_citizen_card')) {
+                                    addLog('你已經有良民證了。');
+                                } else if (stats.age < 18) {
+                                    alert("未滿 18 歲者，需由法定代理人代為申請。請先聯繫監護人或社工協助。");
+                                    addLog('嘗試申請良民證失敗 (未滿18歲)。');
+                                } else {
+                                    setInventory(prev => ({...prev, items: [...prev.items, 'good_citizen_card']}));
+                                    addLog('獲得「良民證」！');
+                                    setGameState('home');
+                                }
+                            }} className="w-full bg-slate-800 text-white py-2 rounded-lg font-bold text-sm">辦理良民證 ($0)</button>
+                        </div>
+                        <button onClick={() => setGameState('home')} className="w-full mt-6 bg-slate-200 text-slate-600 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition-colors">
+                            <ArrowLeft size={18}/> 回到首頁
+                        </button>
+                    </div>
+                </div>
+            );
+
+            const renderPurchaseModal = () => {
+                if (!purchaseModal) return null;
+                const item = purchaseModal;
+                return (
+                    <div className="absolute inset-0 bg-black/80 z-50 flex items-center justify-center p-6">
+                        <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-bounce-in">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-bold text-lg">選擇付款方式</h3>
+                                <button onClick={() => setPurchaseModal(null)}><X size={20}/></button>
+                            </div>
+                            <div className="mb-4 bg-slate-50 p-4 rounded-lg">
+                                <p className="font-bold text-xl text-slate-800">{item.name}</p>
+                                <p className="text-slate-500 text-sm mt-1">{item.desc}</p>
+                                <p className="text-violet-600 font-bold text-2xl mt-2">${item.price}</p>
+                            </div>
+                            <div className="space-y-3">
+                                <button onClick={() => handlePurchase('cash')} className="w-full p-3 flex justify-between items-center bg-green-50 text-green-800 rounded-xl hover:bg-green-100 border border-green-200">
+                                    <span className="font-bold flex items-center gap-2"><DollarSign size={16}/> 現金付款</span>
+                                    <span className="text-xs">立即扣款</span>
+                                </button>
+                                {item.payMethod.includes('credit') && stats.age >= 18 && (
+                                    <button onClick={() => handlePurchase('credit')} className="w-full p-3 flex justify-between items-center bg-blue-50 text-blue-800 rounded-xl hover:bg-blue-100 border border-blue-200">
+                                        <span className="font-bold flex items-center gap-2"><CreditCard size={16}/> 信用卡</span>
+                                        <span className="text-xs">下週扣款 (需滿18歲)</span>
+                                    </button>
+                                )}
+                                {item.payMethod.includes('bnpl') && (
+                                    <button onClick={() => handlePurchase('bnpl')} className="w-full p-3 flex justify-between items-center bg-purple-50 text-purple-800 rounded-xl hover:bg-purple-100 border border-purple-200">
+                                        <span className="font-bold flex items-center gap-2"><Zap size={16}/> 無卡分期 (BNPL)</span>
+                                        <div className="text-right leading-tight">
+                                            <span className="text-xs block font-bold">免頭期款，分4期</span>
+                                            <span className="text-[10px] text-red-500">總價+20% 利息</span>
+                                        </div>
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderQuiz = () => {
+                if (!activeQuiz) return null;
+                const q = activeQuiz.questions && activeQuiz.questions[activeQuiz.step];
+                if (!q) { setActiveQuiz(null); return null; }
+
+                return (
+                    <ModalWrapper title={activeQuiz.title}>
+                        <p className="font-bold text-lg mb-4">{q.q}</p>
+                        <div className="space-y-2">
+                            {q.options.map((opt, i) => (
+                                <button key={i} onClick={() => {
+                                    const isCorrect = i === q.ans;
+                                    if (activeQuiz.step + 1 < activeQuiz.questions.length) {
+                                        setActiveQuiz(p => ({...p, step: p.step + 1, score: (p.score||0) + (isCorrect?1:0) }));
+                                    } else {
+                                        const finalScore = (activeQuiz.score||0) + (isCorrect?1:0);
+                                        const passed = finalScore === activeQuiz.questions.length;
+                                        activeQuiz.cb(passed);
+                                        setActiveQuiz(null);
+                                    }
+                                }} className="w-full bg-zinc-100 border-2 border-black p-3 text-left hover:bg-yellow-200 transition-colors neo-btn">
+                                    {String.fromCharCode(65+i)}. {opt}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="mt-4 text-right text-xs font-mono">{activeQuiz.step + 1} / {activeQuiz.questions.length}</div>
+                    </ModalWrapper>
+                )
+            };
+
+            const renderEvent = () => {
+                if (!currentEvent) return null;
+                return (
+                    <ModalWrapper title="突發事件" color={currentEvent.type === 'risk' ? 'bg-red-500' : 'bg-zinc-200'}>
+                        <div className="text-center">
+                            <AlertTriangle size={48} className="mx-auto mb-4"/>
+                            <h2 className="text-2xl font-black mb-2">{currentEvent.title}</h2>
+                            <p className="mb-6 font-bold">{currentEvent.desc}</p>
+                            <button onClick={handleEventConfirm} className="w-full bg-black text-white font-pixel text-xl p-2 border-2 border-white hover:bg-zinc-800 neo-btn">
+                                確認
+                            </button>
+                        </div>
+                    </ModalWrapper>
+                )
+            };
+
+            return (
+                <div className="w-full max-w-sm h-[800px] bg-black rounded-[3rem] p-3 shadow-2xl relative border-4 border-zinc-700">
+                    <div className="absolute right-[-8px] top-32 w-2 h-16 bg-zinc-800 rounded-r-md"></div>
+                    <div className="absolute left-[-8px] top-24 w-2 h-8 bg-zinc-800 rounded-l-md"></div>
+
+                    <div className={`w-full h-full bg-zinc-900 rounded-[2.5rem] overflow-hidden flex flex-col relative text-black ${screenEffect === 'glitch' ? 'glitch-effect' : ''}`} data-text="SYSTEM_FAILURE">
+                        <div className="scanlines"></div>
+                        <FloatingTextOverlay texts={floatingTexts} />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-black rounded-b-xl z-30"></div>
+                        
+                        <div className="flex-1 overflow-hidden relative z-20 bg-white">
+                            {gameState === 'onboarding' ? renderOnboarding() :
+                            gameState === 'home' ? ( <><StatBar stats={stats} />{renderHome()}</> ) :
+                            gameState === 'app_job' ? ( <><StatBar stats={stats} />{renderJobs()}</> ) :
+                            gameState === 'app_house' ? ( <><StatBar stats={stats} />{renderHousing()}</> ) :
+                            gameState === 'app_resource' ? ( <><StatBar stats={stats} />{renderResourceApp()}</> ) :
+                            gameState === 'app_finance' ? ( <><StatBar stats={stats} />{renderFinanceApp()}</> ) :
+                            gameState === 'ending' ? renderEnding() : null
+                            }
+                            
+                            {renderQuiz()}
+                            {renderEvent()}
+                            {renderPurchaseModal()}
+                        </div>
+
+                        {gameState !== 'onboarding' && (
+                            <div className="absolute bottom-2 left-0 right-0 h-6 flex justify-center z-30">
+                                <div className="w-32 h-1 bg-black/40 rounded-full cursor-pointer hover:bg-black transition-colors" onClick={()=>setGameState('home')}></div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
