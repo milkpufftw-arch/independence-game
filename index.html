@@ -1,1867 +1,801 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>自立大冒險｜完整四大APP＋事件＋測驗＋商店</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>自立大冒險 - 自立生活模擬器</title>
+    
+    <!-- 1. 載入核心函式庫 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 
-  <!-- React / ReactDOM -->
-  <script crossorigin="anonymous" src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin="anonymous" src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-  <!-- Babel (JSX) -->
-  <script crossorigin="anonymous" src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet" />
-
-  <style>
-    :root{
-      --bg:#1f1f23;
-      --panel:#ffffff;
-      --ink:#111;
-      --muted:#666;
-      --shadow: 6px 6px 0 #000;
-      --shadow-sm: 3px 3px 0 #000;
-      --border: 3px solid #000;
-      --radius: 16px;
-      --radius-lg: 36px;
-      --font: "Noto Sans TC", system-ui, -apple-system, "Segoe UI", Roboto, Arial;
-      --pixel: "VT323", monospace;
-
-      --ok:#16a34a;
-      --bad:#dc2626;
-      --warn:#f59e0b;
-      --info:#2563eb;
-      --vio:#7c3aed;
-    }
-
-    *{ box-sizing:border-box; }
-    html,body{ height:100%; }
-    body{
-      margin:0;
-      background: radial-gradient(1200px 800px at 50% 20%, #3b3b44, var(--bg));
-      font-family: var(--font);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      overflow:hidden;
-      color:var(--ink);
-    }
-
-    #root{
-      width: min(980px, 98vw);
-      height: min(920px, 96vh);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-
-    /* Phone frame */
-    .frame{
-      width: min(520px, 96vw);
-      height: min(900px, 96vh);
-      background:#000;
-      border: 4px solid #444;
-      border-radius: var(--radius-lg);
-      padding: 12px;
-      box-shadow: 0 24px 60px rgba(0,0,0,.55);
-      position:relative;
-    }
-    .screen{
-      width:100%;
-      height:100%;
-      background: #f5f5f5;
-      border-radius: calc(var(--radius-lg) - 10px);
-      overflow:hidden;
-      position:relative;
-      display:flex;
-      flex-direction:column;
-    }
-    .notch{
-      position:absolute;
-      top:0;
-      left:50%;
-      transform:translateX(-50%);
-      width: 180px;
-      height: 30px;
-      background:#000;
-      border-bottom-left-radius: 16px;
-      border-bottom-right-radius: 16px;
-      z-index:50;
-    }
-
-    .topbar{
-      background:#0f172a;
-      color:#fff;
-      padding: 10px 12px;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      font-family: var(--pixel);
-      font-size: 18px;
-      border-bottom: 4px solid #000;
-      min-height: 52px;
-    }
-    .topbar .pill{
-      background:#111827;
-      padding: 4px 10px;
-      border:2px solid #000;
-      font-family: var(--font);
-      font-weight:900;
-      font-size:12px;
-      border-radius: 999px;
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-      justify-content:flex-end;
-      max-width: 70%;
-    }
-    .pill b{ color:#fff; }
-    .pill .k{ opacity:.85; }
-    .pill .v{ font-weight:900; }
-
-    .page{
-      flex:1;
-      display:flex;
-      flex-direction:column;
-      min-height:0;
-    }
-    .content{
-      flex:1;
-      overflow:auto;
-      padding: 18px 16px 16px;
-      min-height:0;
-    }
-
-    .h1{
-      font-family: var(--pixel);
-      font-size: 54px;
-      margin: 6px 0 6px;
-      text-align:center;
-      letter-spacing:1px;
-    }
-    .sub{
-      text-align:center;
-      color:#222;
-      font-weight:900;
-      margin: 0 0 16px;
-    }
-
-    .card{
-      background: var(--panel);
-      border: var(--border);
-      box-shadow: var(--shadow);
-      border-radius: 14px;
-      padding: 14px;
-    }
-    .card + .card{ margin-top: 14px; }
-
-    .row{
-      display:flex;
-      gap:12px;
-      align-items:stretch;
-    }
-    .col{ flex:1; min-width:0; }
-
-    .label{
-      font-size:12px;
-      color:var(--muted);
-      font-weight:900;
-      margin-bottom:4px;
-    }
-    .big{
-      font-family: var(--pixel);
-      font-size: 40px;
-      font-weight:900;
-      line-height:1;
-    }
-    .small{
-      font-size: 13px;
-      font-weight:800;
-      color:#111;
-      line-height:1.45;
-    }
-
-    /* Buttons */
-    .btn{
-      width:100%;
-      padding: 14px 14px;
-      border: var(--border);
-      background:#111;
-      color:#fff;
-      font-weight:900;
-      font-size: 16px;
-      border-radius: 12px;
-      cursor:pointer;
-      box-shadow: var(--shadow-sm);
-    }
-    .btn:active{ transform: translate(2px,2px); box-shadow: 1px 1px 0 #000; }
-    .btn-secondary{ background:#fff; color:#111; }
-    .btn-blue{ background: var(--info); }
-    .btn-green{ background: var(--ok); }
-    .btn-red{ background: var(--bad); }
-    .btn-orange{ background: var(--warn); color:#111; }
-    .btn-vio{ background: var(--vio); }
-
-    .btn[disabled]{
-      opacity:.55;
-      cursor:not-allowed;
-      transform:none !important;
-      box-shadow: var(--shadow-sm);
-    }
-
-    .badge{
-      display:inline-block;
-      font-size:12px;
-      font-weight:900;
-      padding: 2px 8px;
-      border:2px solid #000;
-      border-radius: 999px;
-      background:#fde68a;
-    }
-    .badge.gray{ background:#e5e7eb; }
-    .badge.ok{ background:#bbf7d0; }
-    .badge.bad{ background:#fecaca; }
-    .badge.info{ background:#bfdbfe; }
-    .badge.vio{ background:#ddd6fe; }
-
-    /* Wheel */
-    .wheel-wrap{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      margin: 10px 0 18px;
-      position:relative;
-    }
-    .wheel-shell{
-      width: 200px;
-      height: 200px;
-      position:relative;
-    }
-    .wheel{
-      width: 200px;
-      height: 200px;
-      border-radius: 999px;
-      border: 8px solid #000;
-      box-shadow: var(--shadow);
-      position:absolute;
-      inset:0;
-      overflow:hidden;
-      background:
-        conic-gradient(
-          #ef4444 0 45deg,
-          #f59e0b 45deg 90deg,
-          #22c55e 90deg 135deg,
-          #3b82f6 135deg 180deg,
-          #a855f7 180deg 225deg,
-          #ef4444 225deg 270deg,
-          #f59e0b 270deg 315deg,
-          #22c55e 315deg 360deg
-        );
-    }
-    .wheel::after{
-      content:"?";
-      position:absolute;
-      inset:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-family: var(--pixel);
-      font-size: 88px;
-      font-weight:900;
-      color:#000;
-      text-shadow: 2px 2px 0 #fff;
-    }
-    .pointer{
-      width:0;height:0;
-      border-left: 14px solid transparent;
-      border-right:14px solid transparent;
-      border-top: 28px solid #000;
-      position:absolute;
-      top:-18px;
-      left:50%;
-      transform: translateX(-50%);
-      z-index:5;
-    }
-    @keyframes spin { from{ transform:rotate(0deg);} to{ transform:rotate(360deg);} }
-    .spinning{ animation: spin .12s linear infinite; transform-origin: 50% 50%; }
-
-    /* Home area */
-    .money-bar{
-      padding: 12px 14px;
-      background:#fff;
-      border-bottom: 4px solid #000;
-    }
-    .money-title{ font-size:12px; color:#777; font-weight:900; display:flex; justify-content:space-between; align-items:center; gap:10px; }
-    .money{
-      font-family: var(--pixel);
-      font-size: 50px;
-      font-weight:900;
-      margin-top: 2px;
-      line-height:1;
-      display:flex;
-      justify-content:space-between;
-      align-items:flex-end;
-      gap:12px;
-      flex-wrap:wrap;
-    }
-    .money .mini{
-      font-family: var(--font);
-      font-size: 12px;
-      font-weight:900;
-      color:#222;
-      display:flex;
-      gap:8px;
-      align-items:center;
-      padding-bottom: 4px;
-    }
-
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      padding: 14px;
-    }
-    .app{
-      border: var(--border);
-      background:#fff;
-      border-radius: 14px;
-      box-shadow: var(--shadow-sm);
-      padding: 12px;
-      cursor:pointer;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:10px;
-      min-height: 120px;
-      font-weight:900;
-      text-align:center;
-      user-select:none;
-    }
-    .app:active{ transform: translate(2px,2px); box-shadow: 1px 1px 0 #000; }
-    .app .icon{
-      width:54px;height:54px;
-      border: var(--border);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      border-radius: 12px;
-      font-family: var(--pixel);
-      font-size: 28px;
-      background:#e5e7eb;
-    }
-    .app.orange .icon{ background:#fdba74; }
-    .app.blue .icon{ background:#93c5fd; }
-    .app.green .icon{ background:#86efac; }
-    .app.purple .icon{ background:#d8b4fe; }
-
-    .footer{
-      padding: 12px 14px;
-      border-top: 4px solid #000;
-      background:#0f172a;
-      color:#fff;
-      height: 240px;
-      display:flex;
-      flex-direction:column;
-      min-height: 240px;
-    }
-    .log-title{
-      font-family: var(--pixel);
-      font-size: 18px;
-      font-weight:900;
-      color:#22c55e;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      border-bottom: 1px solid rgba(255,255,255,.2);
-      padding-bottom: 6px;
-      margin-bottom: 8px;
-    }
-    .logs{
-      overflow:auto;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono";
-      font-size: 13px;
-      line-height: 1.5;
-      color:#22c55e;
-      font-weight:900;
-      min-height:0;
-    }
-    .log{
-      border-left: 4px solid rgba(34,197,94,.4);
-      padding-left: 8px;
-      margin-bottom: 10px;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    /* modal */
-    .overlay{
-      position:absolute;
-      inset:0;
-      background: rgba(0,0,0,.75);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 16px;
-      z-index:100;
-    }
-    .modal{
-      width: min(440px, 100%);
-      max-height: min(760px, 86vh);
-      overflow:auto;
-      background:#fff;
-      border: var(--border);
-      box-shadow: var(--shadow);
-      border-radius: 16px;
-      padding: 14px;
-    }
-    .modal-title{
-      display:inline-block;
-      background:#000;
-      color:#fff;
-      font-family: var(--pixel);
-      font-size: 22px;
-      padding: 6px 10px;
-      border: 2px solid #fff;
-      transform: translateY(-18px) rotate(-2deg);
-      margin-bottom: -6px;
-    }
-    .opt{
-      width:100%;
-      text-align:left;
-      padding: 12px;
-      border: var(--border);
-      background:#f3f4f6;
-      border-radius: 12px;
-      cursor:pointer;
-      font-weight:900;
-      margin-top: 10px;
-      box-shadow: var(--shadow-sm);
-    }
-    .opt:active{ transform: translate(2px,2px); box-shadow: 1px 1px 0 #000; }
-    .hint{ font-size:12px; color:#666; margin-top: 6px; font-weight:900; }
-    .hr{ height:1px; background:#000; opacity:.15; margin: 10px 0; }
-
-    .two{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
-    }
-    .kv{
-      padding:10px;
-      border: var(--border);
-      border-radius: 14px;
-      box-shadow: var(--shadow-sm);
-      background:#fff;
-    }
-    .kv .k{ font-size:12px; color:#666; font-weight:900; }
-    .kv .v{ font-family: var(--pixel); font-size: 28px; font-weight:900; margin-top:2px; }
-
-    .chiprow{ display:flex; flex-wrap:wrap; gap:8px; margin-top: 8px; }
-    .chip{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      padding: 4px 8px;
-      border:2px solid #000;
-      border-radius: 999px;
-      font-size:12px;
-      font-weight:900;
-      background:#e5e7eb;
-    }
-    .chip.ok{ background:#bbf7d0; }
-    .chip.bad{ background:#fecaca; }
-    .chip.info{ background:#bfdbfe; }
-    .chip.vio{ background:#ddd6fe; }
-
-    /* Scrollbar */
-    .content::-webkit-scrollbar{ width: 8px; }
-    .content::-webkit-scrollbar-thumb{ background:#111; border-radius: 999px; }
-    .logs::-webkit-scrollbar{ width: 8px; }
-    .logs::-webkit-scrollbar-thumb{ background:#16a34a; border-radius: 999px; }
-    .modal::-webkit-scrollbar{ width: 8px; }
-    .modal::-webkit-scrollbar-thumb{ background:#111; border-radius: 999px; }
-  </style>
+    <style>
+        body { background-color: #27272a; color: black; font-family: 'Noto Sans TC', sans-serif; margin: 0; padding: 0; height: 100vh; width: 100vw; display: flex; justify-content: center; align-items: center; overflow: hidden; user-select: none; }
+        #crash-report { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #7f1d1d; color: white; padding: 20px; z-index: 10000; overflow: auto; font-family: monospace; white-space: pre-wrap; }
+        #loading-msg { color: #4ade80; font-family: monospace; text-align: center; }
+        
+        .font-pixel { font-family: 'VT323', monospace; }
+        .font-main { font-family: 'Noto Sans TC', sans-serif; }
+        .neo-shadow { box-shadow: 4px 4px 0px 0px #000; }
+        .neo-shadow-sm { box-shadow: 2px 2px 0px 0px #000; }
+        .neo-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px 0px #000; }
+        .app-card:active { transform: scale(0.98); }
+        .scanlines { background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.05)); background-size: 100% 4px; position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 40; }
+        
+        @keyframes bounce-in { 0% { transform: scale(0.8); opacity: 0; } 80% { transform: scale(1.05); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-bounce-in { animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        @keyframes float-up { 0% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -40px); } }
+        .animate-float { animation: float-up 1.5s ease-out forwards; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .animate-spin-fast { animation: spin 0.1s linear infinite; }
+        @keyframes glitch-anim { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } 100% { transform: translate(0); } }
+        .glitch-effect { animation: glitch-anim 0.2s infinite; filter: contrast(1.2) brightness(0.9); }
+        
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #18181b; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #4ade80; border-radius: 3px; }
+    </style>
 </head>
-
 <body>
-  <div id="root"></div>
-
-  <script type="text/babel">
-    const { useEffect, useMemo, useState } = React;
-
-    // -------------------------
-    // Utils
-    // -------------------------
-    const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
-    const rint = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
-    const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-    const nowTs = () => Date.now();
-
-    const STORAGE_KEY = "independence_game_v1_full";
-
-    function loadSave(){
-      try{
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if(!raw) return null;
-        const obj = JSON.parse(raw);
-        if(!obj || !obj.version) return null;
-        return obj;
-      }catch(e){
-        return null;
-      }
-    }
-    function saveGame(payload){
-      try{
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-      }catch(e){}
-    }
-    function clearSave(){
-      try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
-    }
-
-    // -------------------------
-    // Core Data
-    // -------------------------
-    const ORIGINS = [
-      { grade:'A', money:0,    desc:'身無分文：起步更辛苦，但你有機會靠策略翻盤。', prob:0.10 },
-      { grade:'B', money:2000, desc:'勉強餬口：壓力偏高，需精打細算。', prob:0.30 },
-      { grade:'C', money:4000, desc:'稍有積蓄：一般起步，容錯空間中等。', prob:0.30 },
-      { grade:'D', money:6000, desc:'一般小康：可多投資自我提升。', prob:0.20 },
-      { grade:'E', money:8000, desc:'資源較多：別大意，詐騙與衝動消費仍會讓你翻車。', prob:0.10 },
-    ];
-    function pickOrigin(){
-      const r = Math.random();
-      let acc = 0;
-      for(const o of ORIGINS){
-        acc += o.prob;
-        if(r <= acc) return o;
-      }
-      return ORIGINS[ORIGINS.length - 1];
-    }
-
-    const HOUSING_OPTIONS = [
-      {
-        id:"room_shared",
-        name:"合租雅房",
-        rent:2500,
-        deposit:2500,
-        safety:+2,
-        mood:+2,
-        note:"費用低，但室友互動影響心情；要簽約、點交。"
-      },
-      {
-        id:"studio",
-        name:"分租套房",
-        rent:4200,
-        deposit:4200,
-        safety:+4,
-        mood:+1,
-        note:"相對穩定，但費用提高；注意押金條款、修繕責任。"
-      },
-      {
-        id:"illegal_topup",
-        name:"超便宜『免押金』廣告房",
-        rent:1800,
-        deposit:0,
-        safety:-10,
-        mood:-2,
-        scamRisk:+20,
-        note:"高風險：假房東/釣魚連結/要求匯款保留。"
-      },
-      {
-        id:"no_home",
-        name:"暫無固定住所",
-        rent:0,
-        deposit:0,
-        safety:-6,
-        mood:-6,
-        note:"短期省錢但身心消耗大，事件風險上升。"
-      }
-    ];
-
-    const JOB_OPTIONS = [
-      {
-        id:"parttime_store",
-        name:"便利商店兼職",
-        weeklyPay:1200,
-        mood:-2,
-        health:-1,
-        security:+0,
-        note:"排班彈性一般；累積工作經驗。"
-      },
-      {
-        id:"delivery",
-        name:"外送接單",
-        weeklyPay:1600,
-        mood:-3,
-        health:-3,
-        security:-2,
-        note:"收入較高但風險與疲勞偏高；注意交通安全。"
-      },
-      {
-        id:"office_assist",
-        name:"行政助理(計時)",
-        weeklyPay:1400,
-        mood:-1,
-        health:-1,
-        security:+1,
-        note:"較穩定；需要準時與基本文書能力。"
-      },
-      {
-        id:"shady_job",
-        name:"『高薪輕鬆』神秘工作",
-        weeklyPay:2600,
-        mood:+0,
-        health:+0,
-        security:-12,
-        scamRisk:+25,
-        note:"高風險：人頭帳戶/代收款/跑腿領現金。"
-      },
-      {
-        id:"unemployed",
-        name:"暫無工作",
-        weeklyPay:0,
-        mood:-4,
-        health:+0,
-        security:+0,
-        note:"短期休息，但財務壓力與心情風險提高。"
-      }
-    ];
-
-    const SHOP_ITEMS = [
-      { id:"earplugs", name:"耳塞", price:120, effects:{ mood:+3 }, note:"提升睡眠品質。"},
-      { id:"firstaid", name:"簡易急救包", price:300, effects:{ health:+5 }, note:"意外事件可減傷。"},
-      { id:"simlock", name:"SIM 卡鎖/防詐設定", price:200, effects:{ security:+6 }, note:"降低詐騙事件影響。"},
-      { id:"meal", name:"餐券(本週)", price:250, effects:{ health:+3, mood:+2 }, note:"週結算時減少疲勞。"},
-      { id:"notebook", name:"記帳本", price:80, effects:{ security:+1, mood:+1 }, note:"完成測驗時額外加成。"},
-    ];
-
-    const QUIZ_BANK = [
-      {
-        id:"q1",
-        q:"看到『房東要求先匯款保留』，最安全的做法？",
-        options:[
-          {t:"立刻匯款以免被搶走", ok:false},
-          {t:"堅持看房、核對身分、簽約後再付款", ok:true},
-          {t:"把身分證正反面先傳給對方", ok:false},
-          {t:"改用點數或虛擬貨幣付款", ok:false},
-        ],
-        explain:"租屋交易以『看房、點交、合約、收據』為優先，避免先匯款。"
-      },
-      {
-        id:"q2",
-        q:"陌生人說『幫你代收款、給你抽成』，你該？",
-        options:[
-          {t:"先做一次試試看", ok:false},
-          {t:"拒絕並保留對話紀錄，必要時求助", ok:true},
-          {t:"把帳戶借他用，自己不碰錢就沒事", ok:false},
-          {t:"請他改用你家人帳戶", ok:false},
-        ],
-        explain:"人頭帳戶與代收款風險高，可能涉刑責。"
-      },
-      {
-        id:"q3",
-        q:"記帳的目的最貼近下列何者？",
-        options:[
-          {t:"把每一筆花費都寫得很漂亮", ok:false},
-          {t:"了解錢流向，做出能維持生活的預算選擇", ok:true},
-          {t:"只記大額，其他不用管", ok:false},
-          {t:"記帳等於省錢，不需要規劃", ok:false},
-        ],
-        explain:"記帳是『看見現況』，預算才是『做出選擇』。"
-      },
-      {
-        id:"q4",
-        q:"手機密碼設定，以下哪個最不建議？",
-        options:[
-          {t:"長度足夠、避免常見序列", ok:true},
-          {t:"用 123456 / 0000 這類常見密碼", ok:false},
-          {t:"開啟雙重驗證(2FA)", ok:true},
-          {t:"定期更新、不同服務不同密碼", ok:true},
-        ],
-        explain:"常見序列密碼非常容易被破解。"
-      }
-    ];
-
-    // 事件模板：依安全/心情/住房/工作觸發
-    function buildEventPool(){
-      return [
-        {
-          id:"evt_scam_sms",
-          title:"詐騙簡訊：包裹未取",
-          level:"warn",
-          condition:(s)=> true,
-          intro:"你收到『包裹未取，請點連結補資料』簡訊。",
-          options:[
-            {
-              label:"不點連結，改用官方APP查詢（消耗1行動力）",
-              cost:{ ap:1 },
-              apply:(s)=> ({...s, security: clamp(s.security+3,0,100), mood: clamp(s.mood+1,0,100)}),
-              log:"你改用官方管道查詢，避開釣魚連結。"
-            },
-            {
-              label:"點連結填資料（不消耗行動力）",
-              cost:{ ap:0 },
-              apply:(s)=> {
-                const hit = Math.random() < clamp(0.55 - s.security/200, 0.15, 0.55);
-                if(hit){
-                  return {...s, money: Math.max(0, s.money-800), security: clamp(s.security-6,0,100), mood: clamp(s.mood-6,0,100)};
-                }
-                return {...s, security: clamp(s.security-2,0,100), mood: clamp(s.mood-2,0,100)};
-              },
-              log:"你點了不明連結…可能造成個資/金錢損失。"
-            },
-          ],
-        },
-        {
-          id:"evt_roommate",
-          title:"室友情緒衝突",
-          level:"info",
-          condition:(s)=> s.housingId === "room_shared",
-          intro:"室友抱怨你太晚回家，氣氛緊張。",
-          options:[
-            {
-              label:"先協商規則與界線（消耗1行動力）",
-              cost:{ ap:1 },
-              apply:(s)=> ({...s, mood: clamp(s.mood+4,0,100), security: clamp(s.security+1,0,100)}),
-              log:"你嘗試協商，衝突降溫。"
-            },
-            {
-              label:"不理會（不消耗行動力）",
-              cost:{ ap:0 },
-              apply:(s)=> ({...s, mood: clamp(s.mood-8,0,100), health: clamp(s.health-2,0,100)}),
-              log:"你選擇不處理，壓力累積。"
-            },
-          ],
-        },
-        {
-          id:"evt_overtime",
-          title:"臨時加班",
-          level:"info",
-          condition:(s)=> s.jobId && s.jobId !== "unemployed",
-          intro:"主管臨時加班，時間被壓縮。",
-          options:[
-            {
-              label:"加班（收入+300／心情-3／體力-2）（消耗1行動力）",
-              cost:{ ap:1 },
-              apply:(s)=> ({...s, money: s.money+300, mood: clamp(s.mood-3,0,100), health: clamp(s.health-2,0,100)}),
-              log:"你選擇加班，增加一些收入。"
-            },
-            {
-              label:"婉拒，保留休息（心情+1）（消耗1行動力）",
-              cost:{ ap:1 },
-              apply:(s)=> ({...s, mood: clamp(s.mood+1,0,100), security: clamp(s.security+1,0,100)}),
-              log:"你婉拒加班，保住休息與界線。"
-            },
-          ],
-        },
-        {
-          id:"evt_sick",
-          title:"身體不舒服",
-          level:"warn",
-          condition:(s)=> s.health <= 70 || Math.random() < 0.35,
-          intro:"你開始咳嗽、頭痛，影響狀態。",
-          options:[
-            {
-              label:"買藥休息（花費200／體力+6）（消耗1行動力）",
-              cost:{ ap:1, money:200 },
-              apply:(s)=> ({...s, money: Math.max(0, s.money-200), health: clamp(s.health+6,0,100), mood: clamp(s.mood+1,0,100)}),
-              log:"你安排休息與照顧身體。"
-            },
-            {
-              label:"硬撐（體力-6／心情-3）（不消耗行動力）",
-              cost:{ ap:0 },
-              apply:(s)=> ({...s, health: clamp(s.health-6,0,100), mood: clamp(s.mood-3,0,100)}),
-              log:"你選擇硬撐，疲勞累積。"
-            },
-          ],
-        },
-        {
-          id:"evt_shady_invite",
-          title:"陌生人邀你『代收款抽成』",
-          level:"bad",
-          condition:(s)=> true,
-          intro:"有人私訊你：『代收款就抽成，輕鬆賺。』",
-          options:[
-            {
-              label:"直接拒絕＋封鎖（資安+4）（消耗1行動力）",
-              cost:{ ap:1 },
-              apply:(s)=> ({...s, security: clamp(s.security+4,0,100), mood: clamp(s.mood+1,0,100)}),
-              log:"你拒絕並封鎖，降低後續風險。"
-            },
-            {
-              label:"試一次（收入+1200；若中招：資安-12、金錢-1000）（不消耗行動力）",
-              cost:{ ap:0 },
-              apply:(s)=> {
-                const hit = Math.random() < clamp(0.60 - s.security/220, 0.18, 0.60);
-                if(hit){
-                  return {...s, money: Math.max(0, s.money-1000), security: clamp(s.security-12,0,100), mood: clamp(s.mood-10,0,100)};
-                }
-                return {...s, money: s.money+1200, security: clamp(s.security-6,0,100), mood: clamp(s.mood-3,0,100)};
-              },
-              log:"你把自己放進高風險情境…"
-            },
-          ],
-        }
-      ];
-    }
-
-    // -------------------------
-    // Initial State
-    // -------------------------
-    const INITIAL = {
-      version:"1.0",
-      phase:"onboarding", // onboarding | home
-      spinning:false,
-      spinResult:null,
-      modal:null,
-
-      // Stats
-      week:1,
-      maxWeeks:10,
-      age:18,
-      ap:3,
-      maxAp:3,
-
-      money:0,
-      savings:0,
-      health:100,
-      mood:100,
-      security:50,
-
-      // selections
-      originGrade:null,
-      originDesc:"",
-      phoneSecurityChoice:null, // weak | 2fa
-
-      housingId:null,
-      jobId:"unemployed",
-
-      // finance plan
-      planWeeklySave: 0,      // planned transfer to savings at week end
-      planWeeklyBudget: 0,    // for user reference only
-      streakQuiz: 0,
-
-      // inventory
-      inventory: {},
-
-      // events
-      activeEvent:null,       // {id,title, intro, options, level}
-      resolvedEvents:0,
-
-      // logs
-      logs:[
-        `> 系統初始化完成...`,
-      ],
-
-      // last saved
-      lastSavedAt: 0,
-    };
-
-    // -------------------------
-    // Game Engine (pure-ish)
-    // -------------------------
-    function addLog(state, msg){
-      const logs = [`> ${msg}`, ...state.logs].slice(0, 14);
-      return {...state, logs};
-    }
-
-    function canAfford(state, cost){
-      if(!cost) return true;
-      const moneyNeed = cost.money || 0;
-      const apNeed = cost.ap || 0;
-      return state.money >= moneyNeed && state.ap >= apNeed;
-    }
-
-    function applyCost(state, cost){
-      if(!cost) return state;
-      let s = {...state};
-      if(cost.money) s.money = Math.max(0, s.money - cost.money);
-      if(cost.ap) s.ap = Math.max(0, s.ap - cost.ap);
-      return s;
-    }
-
-    function addInventory(state, itemId){
-      const inv = {...state.inventory};
-      inv[itemId] = (inv[itemId] || 0) + 1;
-      return {...state, inventory: inv};
-    }
-
-    function useInventoryIfHas(state, itemId){
-      const inv = {...state.inventory};
-      if((inv[itemId]||0) <= 0) return { state, used:false };
-      inv[itemId] = inv[itemId] - 1;
-      return { state: {...state, inventory: inv}, used:true };
-    }
-
-    function pickWeeklyEvent(state){
-      const pool = buildEventPool().filter(e => e.condition(state));
-      // 增加風險權重：安全低時偏向 bad/warn
-      const weighted = [];
-      for(const e of pool){
-        let w = 1;
-        if(e.level === "bad") w += clamp((60 - state.security)/12, 0, 4);
-        if(e.level === "warn") w += clamp((55 - state.security)/18, 0, 2);
-        if(e.level === "info") w += 1;
-        for(let i=0;i<Math.round(w*10);i++) weighted.push(e);
-      }
-      return pick(weighted);
-    }
-
-    function weekUpkeep(state){
-      // 基本生活成本：若有住房，付房租；無住房會造成身心損耗
-      let s = {...state};
-
-      // 收入（若有工作）
-      const job = JOB_OPTIONS.find(j => j.id === s.jobId) || JOB_OPTIONS.find(j => j.id==="unemployed");
-      if(job && job.weeklyPay){
-        s.money += job.weeklyPay;
-        s = addLog(s, `本週工作收入 +$${job.weeklyPay}（${job.name}）`);
-      }
-
-      // 房租
-      const housing = HOUSING_OPTIONS.find(h => h.id === s.housingId);
-      if(housing && housing.rent > 0){
-        const rent = housing.rent;
-        s.money = Math.max(0, s.money - rent);
-        s = addLog(s, `本週房租 -$${rent}（${housing.name}）`);
-      } else if(s.housingId === "no_home" || !s.housingId){
-        s.mood = clamp(s.mood - 8, 0, 100);
-        s.health = clamp(s.health - 6, 0, 100);
-        s = addLog(s, `居住不穩定：心情 -8／體力 -6`);
-      }
-
-      // 週基本開銷（交通/餐費等）
-      const base = 900;
-      s.money = Math.max(0, s.money - base);
-      s = addLog(s, `生活開銷 -$${base}`);
-
-      // 依工作負荷調整
-      if(job){
-        s.mood = clamp(s.mood + (job.mood||0), 0, 100);
-        s.health = clamp(s.health + (job.health||0), 0, 100);
-        s.security = clamp(s.security + (job.security||0), 0, 100);
-      }
-
-      // 依住房調整
-      if(housing){
-        s.mood = clamp(s.mood + (housing.mood||0), 0, 100);
-        s.security = clamp(s.security + (housing.safety||0), 0, 100);
-      }
-
-      // 餐券加成（若有）
-      const usedMeal = useInventoryIfHas(s, "meal");
-      s = usedMeal.state;
-      if(usedMeal.used){
-        s.health = clamp(s.health + 3, 0, 100);
-        s.mood = clamp(s.mood + 2, 0, 100);
-        s = addLog(s, `使用餐券：體力 +3／心情 +2`);
-      }
-
-      // 計畫性儲蓄：把計畫金額轉入savings（若夠錢）
-      const plan = Math.max(0, s.planWeeklySave|0);
-      if(plan > 0){
-        const amt = Math.min(plan, s.money);
-        s.money -= amt;
-        s.savings += amt;
-        s = addLog(s, `自動儲蓄 +$${amt}（存入儲蓄）`);
-      }
-
-      // AP reset + week++
-      s.week += 1;
-      s.ap = s.maxAp;
-
-      // 生成新事件（如果還沒結束）
-      if(s.week <= s.maxWeeks){
-        const evt = pickWeeklyEvent(s);
-        s.activeEvent = {
-          id: evt.id,
-          title: evt.title,
-          level: evt.level,
-          intro: evt.intro,
-          options: evt.options
-        };
-        s = addLog(s, `本週事件：${evt.title}`);
-      }
-
-      return s;
-    }
-
-    function checkGameOver(state){
-      if(state.week > state.maxWeeks) return { over:true, reason:"完成所有週次" };
-      if(state.health <= 0) return { over:true, reason:"體力歸零：需要先恢復身心安全" };
-      if(state.mood <= 0) return { over:true, reason:"心情歸零：需要先穩定情緒與支持" };
-      if(state.security <= 0) return { over:true, reason:"資安歸零：高風險狀態" };
-      return { over:false, reason:"" };
-    }
-
-    function finalScore(state){
-      // 簡單總評：存款與身心/資安
-      const wealth = state.money + state.savings;
-      const stability = Math.round((state.health + state.mood + state.security) / 3);
-      let grade = "C";
-      if(wealth >= 18000 && stability >= 75) grade = "A";
-      else if(wealth >= 12000 && stability >= 65) grade = "B";
-      else if(wealth >= 7000 && stability >= 55) grade = "C";
-      else if(wealth >= 3000 && stability >= 45) grade = "D";
-      else grade = "E";
-      return { wealth, stability, grade };
-    }
-
-    // -------------------------
-    // UI Helpers
-    // -------------------------
-    function StatChip({label, value, kind}){
-      return <span className={"chip " + (kind||"")}>{label}：{value}</span>;
-    }
-
-    // -------------------------
-    // App
-    // -------------------------
-    function App(){
-      const [S, setS] = useState(()=> {
-        const saved = loadSave();
-        if(saved && saved.state){
-          return {...INITIAL, ...saved.state, modal:null, spinning:false};
-        }
-        return {...INITIAL};
-      });
-
-      // Autosave
-      useEffect(()=>{
-        const payload = { version:"1.0", savedAt: nowTs(), state: {...S, modal:null, spinning:false} };
-        saveGame(payload);
-      }, [S.week, S.money, S.savings, S.health, S.mood, S.security, S.ap, S.housingId, S.jobId, S.planWeeklySave, S.planWeeklyBudget, JSON.stringify(S.inventory), S.phase]);
-
-      const gameOver = useMemo(()=> checkGameOver(S), [S]);
-      const score = useMemo(()=> finalScore(S), [S]);
-
-      const add = (msg)=> setS(prev => addLog(prev, msg));
-
-      const openModal = (modal)=> setS(prev => ({...prev, modal}));
-      const closeModal = ()=> setS(prev => ({...prev, modal:null}));
-
-      const spendAPGuard = (cost, onOk) => {
-        setS(prev=>{
-          if(!canAfford(prev, cost)){
-            return addLog(prev, "行動力或金錢不足，無法執行。");
-          }
-          const after = applyCost(prev, cost);
-          return onOk(after);
-        });
-      };
-
-      // -------------------------
-      // Onboarding
-      // -------------------------
-      const spin = ()=>{
-        if(S.spinning) return;
-        setS(prev => addLog({...prev, spinning:true}, "命運轉盤啟動..."));
-        setTimeout(()=>{
-          const origin = pickOrigin();
-          const age = rint(15,19);
-          setS(prev=>{
-            let n = {...prev};
-            n.spinning = false;
-            n.spinResult = { ...origin, age };
-            n.originGrade = origin.grade;
-            n.originDesc = origin.desc;
-            n.age = age;
-            n.money = origin.money;
-            n = addLog(n, `抽到等級 ${origin.grade}／初始存款 $${origin.money}／年齡 ${age}`);
-            return n;
-          });
-        }, 1100);
-      };
-
-      const choosePassword = ()=>{
-        openModal({
-          title:"第一關：設定手機密碼",
-          body:"選擇你的資安策略（會影響後續詐騙風險）。",
-          options:[
-            {
-              label:"1) 123456（方便好記） → 資安 -20",
-              action: ()=>{
-                setS(prev=>{
-                  let n = {...prev};
-                  n.security = clamp(n.security-20, 0, 100);
-                  n.phoneSecurityChoice = "weak";
-                  n = addLog(n, "選擇弱密碼：資安 -20");
-                  n.phase = "home";
-                  // 起始事件
-                  const evt = pickWeeklyEvent(n);
-                  n.activeEvent = { id:evt.id, title:evt.title, level:evt.level, intro:evt.intro, options:evt.options };
-                  n = addLog(n, `本週事件：${evt.title}`);
-                  n.modal = null;
-                  return n;
-                });
-              }
-            },
-            {
-              label:"2) 開啟 2FA（安全驗證） → 資安 +10",
-              action: ()=>{
-                setS(prev=>{
-                  let n = {...prev};
-                  n.security = clamp(n.security+10, 0, 100);
-                  n.phoneSecurityChoice = "2fa";
-                  n = addLog(n, "開啟 2FA：資安 +10");
-                  n.phase = "home";
-                  const evt = pickWeeklyEvent(n);
-                  n.activeEvent = { id:evt.id, title:evt.title, level:evt.level, intro:evt.intro, options:evt.options };
-                  n = addLog(n, `本週事件：${evt.title}`);
-                  n.modal = null;
-                  return n;
-                });
-              }
-            }
-          ]
-        });
-      };
-
-      const restart = ()=>{
-        clearSave();
-        window.location.reload();
-      };
-
-      // -------------------------
-      // Home Actions
-      // -------------------------
-      const openHousing = ()=>{
-        const housing = HOUSING_OPTIONS.find(h => h.id === S.housingId);
-        openModal({
-          title:"🏠 租屋中心",
-          body:"選擇你本週的居住型態（部分選項需先付押金）。",
-          render: ()=>(
-            <div>
-              <div className="two">
-                <div className="kv"><div className="k">目前居住</div><div className="v">{housing ? housing.name : "未選擇"}</div></div>
-                <div className="kv"><div className="k">本週行動力</div><div className="v">{S.ap}/{S.maxAp}</div></div>
-              </div>
-              <div className="hr"></div>
-              {HOUSING_OPTIONS.map(h=>{
-                const isCurrent = h.id === S.housingId;
-                const needDeposit = (S.housingId !== h.id) && h.deposit > 0 && !isCurrent;
-                const disabled = needDeposit && S.money < h.deposit;
-                return (
-                  <button key={h.id} className="opt" disabled={disabled}
-                    onClick={()=>{
-                      // 更換住房：消耗1AP；若需押金就先付押金；本週起算房租在週結算
-                      const cost = { ap:1, money: (needDeposit ? h.deposit : 0) };
-                      spendAPGuard(cost, (after)=>{
-                        let n = {...after};
-                        n.housingId = h.id;
-                        n.security = clamp(n.security + (h.safety||0), 0, 100);
-                        n.mood = clamp(n.mood + (h.mood||0), 0, 100);
-                        n = addLog(n, `住房調整：${h.name}${needDeposit?`（押金 -$${h.deposit}）`:""}`);
-                        n.modal = null;
-                        return n;
-                      });
-                    }}
-                  >
-                    <div style={{display:"flex", justifyContent:"space-between", gap:10}}>
-                      <div style={{minWidth:0}}>
-                        <div style={{fontWeight:900}}>{h.name} {isCurrent && <span className="badge gray">目前</span>}</div>
-                        <div className="hint">房租：${h.rent}/週｜押金：${h.deposit}｜{h.note}</div>
-                      </div>
-                      <div style={{textAlign:"right", whiteSpace:"nowrap"}}>
-                        <div className="badge info">安全 {h.safety>=0?`+${h.safety}`:h.safety}</div>
-                        <div style={{height:6}}></div>
-                        <div className="badge vio">心情 {h.mood>=0?`+${h.mood}`:h.mood}</div>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-              <button className="opt" onClick={closeModal}>返回</button>
-            </div>
-          ),
-          options:[]
-        });
-      };
-
-      const openJob = ()=>{
-        const job = JOB_OPTIONS.find(j => j.id === S.jobId) || JOB_OPTIONS.find(j=>j.id==="unemployed");
-        openModal({
-          title:"💼 人力銀行",
-          body:"選擇你的工作（工作會在週結算時發薪，並影響身心/資安）。",
-          render: ()=>(
-            <div>
-              <div className="two">
-                <div className="kv"><div className="k">目前工作</div><div className="v">{job.name}</div></div>
-                <div className="kv"><div className="k">本週行動力</div><div className="v">{S.ap}/{S.maxAp}</div></div>
-              </div>
-              <div className="hr"></div>
-              {JOB_OPTIONS.map(j=>{
-                const isCurrent = j.id === S.jobId;
-                const risk = (j.scamRisk||0);
-                return (
-                  <button key={j.id} className="opt"
-                    onClick={()=>{
-                      spendAPGuard({ap:1}, (after)=>{
-                        let n = {...after};
-                        n.jobId = j.id;
-                        n = addLog(n, `工作選擇：${j.name}（週薪 $${j.weeklyPay}）`);
-                        if(risk>0){
-                          n.security = clamp(n.security - Math.round(risk/5), 0, 100);
-                          n = addLog(n, `高風險工作警示：資安下降（風險 ${risk}）`);
-                        }
-                        n.modal = null;
-                        return n;
-                      });
-                    }}
-                  >
-                    <div style={{display:"flex", justifyContent:"space-between", gap:10}}>
-                      <div style={{minWidth:0}}>
-                        <div style={{fontWeight:900}}>{j.name} {isCurrent && <span className="badge gray">目前</span>}</div>
-                        <div className="hint">週薪：${j.weeklyPay}｜{j.note}</div>
-                      </div>
-                      <div style={{textAlign:"right", whiteSpace:"nowrap"}}>
-                        <div className={"badge " + (j.weeklyPay>=1600?"ok":"info")}>收入 {j.weeklyPay}</div>
-                        <div style={{height:6}}></div>
-                        <div className={"badge " + (risk>0?"bad":"gray")}>風險 {risk||0}</div>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-              <button className="opt" onClick={closeModal}>返回</button>
-            </div>
-          ),
-          options:[]
-        });
-      };
-
-      const openResource = ()=>{
-        openModal({
-          title:"🗺️ 資源地圖",
-          body:"使用資源恢復身心或提升安全（多數需要行動力）。",
-          render: ()=>(
-            <div>
-              <div className="two">
-                <div className="kv"><div className="k">本週行動力</div><div className="v">{S.ap}/{S.maxAp}</div></div>
-                <div className="kv"><div className="k">目前狀態</div><div className="v">{Math.round((S.health+S.mood+S.security)/3)}</div></div>
-              </div>
-              <div className="hr"></div>
-
-              <button className="opt"
-                onClick={()=>{
-                  spendAPGuard({ap:1}, (after)=>{
-                    let n = {...after};
-                    n.mood = clamp(n.mood+8,0,100);
-                    n.security = clamp(n.security+2,0,100);
-                    n = addLog(n, "使用資源：心理支持／情緒陪伴（心情 +8／資安 +2）");
-                    n.modal = null;
-                    return n;
-                  });
-                }}
-              >
-                心理支持／情緒陪伴（AP-1） <span className="badge ok">心情 +8</span>
-              </button>
-
-              <button className="opt"
-                onClick={()=>{
-                  spendAPGuard({ap:1}, (after)=>{
-                    let n = {...after};
-                    n.health = clamp(n.health+10,0,100);
-                    n = addLog(n, "使用資源：就醫/健康照護（體力 +10）");
-                    n.modal = null;
-                    return n;
-                  });
-                }}
-              >
-                健康照護／就醫協助（AP-1） <span className="badge ok">體力 +10</span>
-              </button>
-
-              <button className="opt"
-                onClick={()=>{
-                  spendAPGuard({ap:1}, (after)=>{
-                    let n = {...after};
-                    n.security = clamp(n.security+10,0,100);
-                    n = addLog(n, "使用資源：法律/防詐諮詢（資安 +10）");
-                    n.modal = null;
-                    return n;
-                  });
-                }}
-              >
-                法律/防詐諮詢（AP-1） <span className="badge info">資安 +10</span>
-              </button>
-
-              <button className="opt"
-                onClick={()=>{
-                  spendAPGuard({ap:1}, (after)=>{
-                    let n = {...after};
-                    n.money += 600;
-                    n.mood = clamp(n.mood+2,0,100);
-                    n = addLog(n, "使用資源：急難補助評估（+600／心情 +2）");
-                    n.modal = null;
-                    return n;
-                  });
-                }}
-              >
-                急難補助評估（AP-1） <span className="badge info">金錢 +600</span>
-              </button>
-
-              <button className="opt" onClick={closeModal}>返回</button>
-            </div>
-          ),
-          options:[]
-        });
-      };
-
-      const openFinance = ()=>{
-        openModal({
-          title:"💳 財務管家",
-          body:"設定預算/儲蓄、做防詐與理財測驗、查看資產。",
-          render: ()=>(
-            <div>
-              <div className="two">
-                <div className="kv"><div className="k">可用餘額</div><div className="v">${S.money}</div></div>
-                <div className="kv"><div className="k">儲蓄</div><div className="v">${S.savings}</div></div>
-              </div>
-              <div className="hr"></div>
-
-              <div className="card" style={{boxShadow:"var(--shadow-sm)"}}>
-                <div style={{fontWeight:900}}>每週計畫</div>
-                <div className="hint">此處不扣行動力；週結算會依計畫自動存入（若餘額足夠）。</div>
-
-                <div style={{display:"flex", gap:10, marginTop:10}}>
-                  <div style={{flex:1}}>
-                    <div className="label">每週預算（參考用）</div>
-                    <input id="budget" type="number" min="0" value={S.planWeeklyBudget}
-                      style={{width:"100%", padding:"10px", border:"var(--border)", borderRadius:"12px", fontWeight:900}}
-                      onChange={(e)=> setS(prev=>({...prev, planWeeklyBudget: Math.max(0, parseInt(e.target.value||"0",10))}))}
-                    />
-                  </div>
-                  <div style={{flex:1}}>
-                    <div className="label">每週儲蓄（自動轉入）</div>
-                    <input id="save" type="number" min="0" value={S.planWeeklySave}
-                      style={{width:"100%", padding:"10px", border:"var(--border)", borderRadius:"12px", fontWeight:900}}
-                      onChange={(e)=> setS(prev=>({...prev, planWeeklySave: Math.max(0, parseInt(e.target.value||"0",10))}))}
-                    />
-                  </div>
-                </div>
-
-                <div className="chiprow">
-                  <StatChip label="本週行動力" value={`${S.ap}/${S.maxAp}`} kind="info"/>
-                  <StatChip label="連續測驗" value={`${S.streakQuiz}`} kind="vio"/>
-                  {S.inventory["notebook"] ? <StatChip label="記帳本" value={`x${S.inventory["notebook"]}`} kind="ok"/> : null}
-                </div>
-              </div>
-
-              <button className="opt"
-                onClick={()=> openQuiz()}
-              >
-                🎓 防詐/理財測驗（AP-1） <span className="badge info">答對加分</span>
-              </button>
-
-              <button className="opt" onClick={closeModal}>返回</button>
-            </div>
-          ),
-          options:[]
-        });
-      };
-
-      const openShop = ()=>{
-        openModal({
-          title:"🛒 商店",
-          body:"用金錢購買道具，提升身心/資安（購買不扣行動力）。",
-          render: ()=>(
-            <div>
-              <div className="two">
-                <div className="kv"><div className="k">可用餘額</div><div className="v">${S.money}</div></div>
-                <div className="kv"><div className="k">物品數量</div><div className="v">{Object.values(S.inventory).reduce((a,b)=>a+b,0)}</div></div>
-              </div>
-              <div className="hr"></div>
-
-              {SHOP_ITEMS.map(it=>{
-                const owned = S.inventory[it.id] || 0;
-                const eff = Object.entries(it.effects).map(([k,v])=>{
-                  const label = k==="mood" ? "心情" : k==="health" ? "體力" : k==="security" ? "資安" : k;
-                  return `${label} ${v>0?`+${v}`:v}`;
-                }).join("／");
-                return (
-                  <button key={it.id} className="opt" disabled={S.money < it.price}
-                    onClick={()=>{
-                      setS(prev=>{
-                        if(prev.money < it.price) return addLog(prev, "金錢不足，無法購買。");
-                        let n = {...prev};
-                        n.money -= it.price;
-                        n = addInventory(n, it.id);
-                        // 即時效果：直接加分（餐券/消耗品另計）
-                        const ef = it.effects || {};
-                        if(ef.mood) n.mood = clamp(n.mood + ef.mood, 0, 100);
-                        if(ef.health) n.health = clamp(n.health + ef.health, 0, 100);
-                        if(ef.security) n.security = clamp(n.security + ef.security, 0, 100);
-                        n = addLog(n, `購買：${it.name} -$${it.price}（${eff}）`);
-                        return n;
-                      });
-                    }}
-                  >
-                    <div style={{display:"flex", justifyContent:"space-between", gap:10}}>
-                      <div style={{minWidth:0}}>
-                        <div style={{fontWeight:900}}>{it.name} <span className="badge gray">x{owned}</span></div>
-                        <div className="hint">價格：${it.price}｜{it.note}</div>
-                      </div>
-                      <div style={{textAlign:"right"}}>
-                        <div className="badge ok">{eff}</div>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-
-              <button className="opt" onClick={closeModal}>返回</button>
-            </div>
-          ),
-          options:[]
-        });
-      };
-
-      const openEvent = ()=>{
-        if(!S.activeEvent){
-          add("本週目前沒有事件。");
-          return;
-        }
-        const evt = S.activeEvent;
-        openModal({
-          title:`📌 事件：${evt.title}`,
-          body: evt.intro,
-          render: ()=>(
-            <div>
-              <div className="chiprow">
-                <StatChip label="本週行動力" value={`${S.ap}/${S.maxAp}`} kind="info"/>
-                <StatChip label="資安" value={`${S.security}`} kind={S.security>=60?"ok":S.security>=40?"info":"bad"}/>
-                <StatChip label="心情" value={`${S.mood}`} kind={S.mood>=60?"ok":S.mood>=40?"info":"bad"}/>
-                <StatChip label="體力" value={`${S.health}`} kind={S.health>=60?"ok":S.health>=40?"info":"bad"}/>
-              </div>
-
-              {evt.options.map((op, idx)=>{
-                const needAp = op.cost?.ap || 0;
-                const needMoney = op.cost?.money || 0;
-                const disabled = !canAfford(S, op.cost);
-                return (
-                  <button key={idx} className="opt" disabled={disabled}
-                    onClick={()=>{
-                      spendAPGuard(op.cost || {}, (after)=>{
-                        let n = {...after};
-                        // 物品減傷：急救包可減少生病事件的負面（簡化：若選到會扣health的選項，且持有急救包就額外+3 health）
-                        const before = n;
-                        n = op.apply(n);
-
-                        // 如果選項後 health 掉，且有急救包就補一些（消耗1個）
-                        const diffHealth = n.health - before.health;
-                        if(diffHealth < 0){
-                          const used = useInventoryIfHas(n, "firstaid");
-                          n = used.state;
-                          if(used.used){
-                            n.health = clamp(n.health + 3, 0, 100);
-                            n = addLog(n, "使用急救包：額外體力 +3");
-                          }
-                        }
-
-                        n = addLog(n, op.log);
-                        n.activeEvent = null;
-                        n.resolvedEvents += 1;
-                        n.modal = null;
-                        return n;
-                      });
-                    }}
-                  >
-                    {op.label}
-                    {(needAp>0 || needMoney>0) && (
-                      <div className="hint">
-                        成本：{needAp>0?`AP-${needAp}`:""}{needAp>0 && needMoney>0?"／":""}{needMoney>0?`$-${needMoney}`:""}
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-
-              <button className="opt" onClick={closeModal}>稍後再處理</button>
-            </div>
-          ),
-          options:[]
-        });
-      };
-
-      const openQuiz = ()=>{
-        const q = pick(QUIZ_BANK);
-        openModal({
-          title:"🎓 防詐/理財測驗",
-          body:"答題會消耗行動力 1；答對提升資安與小額獎勵。",
-          render: ()=>(
-            <div>
-              <div className="chiprow">
-                <StatChip label="本週行動力" value={`${S.ap}/${S.maxAp}`} kind="info"/>
-                <StatChip label="連續測驗" value={`${S.streakQuiz}`} kind="vio"/>
-              </div>
-
-              <div className="card" style={{boxShadow:"var(--shadow-sm)", marginTop:10}}>
-                <div style={{fontWeight:900, fontSize:16}}>{q.q}</div>
-                <div className="hint" style={{marginTop:6}}>選一個答案：</div>
-              </div>
-
-              {q.options.map((o, idx)=>(
-                <button key={idx} className="opt"
-                  onClick={()=>{
-                    spendAPGuard({ap:1}, (after)=>{
-                      let n = {...after};
-                      if(o.ok){
-                        // 基礎獎勵
-                        let secGain = 6;
-                        let moneyGain = 120;
-
-                        // 有記帳本加成
-                        if((n.inventory["notebook"]||0) > 0){
-                          secGain += 2;
-                          moneyGain += 30;
-                        }
-
-                        n.security = clamp(n.security + secGain, 0, 100);
-                        n.money += moneyGain;
-                        n.mood = clamp(n.mood + 2, 0, 100);
-                        n.streakQuiz = n.streakQuiz + 1;
-
-                        n = addLog(n, `測驗答對：資安 +${secGain}／金錢 +$${moneyGain}／心情 +2`);
-                        n = addLog(n, `解析：${q.explain}`);
-                      }else{
-                        n.security = clamp(n.security - 4, 0, 100);
-                        n.mood = clamp(n.mood - 3, 0, 100);
-                        n.streakQuiz = 0;
-                        n = addLog(n, "測驗答錯：資安 -4／心情 -3（連續測驗歸零）");
-                        n = addLog(n, `解析：${q.explain}`);
-                      }
-                      n.modal = null;
-                      return n;
-                    });
-                  }}
-                >
-                  {o.t}
-                </button>
-              ))}
-
-              <button className="opt" onClick={closeModal}>返回</button>
-            </div>
-          ),
-          options:[]
-        });
-      };
-
-      const endWeek = ()=>{
-        setS(prev=>{
-          let n = {...prev};
-
-          // 若本週事件沒處理，給一個小惩罰（鼓勵面對事件）
-          if(n.activeEvent){
-            n.mood = clamp(n.mood - 4, 0, 100);
-            n.security = clamp(n.security - 2, 0, 100);
-            n = addLog(n, "未處理事件：心情 -4／資安 -2");
-            n.activeEvent = null;
-          }
-
-          n = addLog(n, `--- 週次結算：第 ${n.week} 週結束 ---`);
-          n = weekUpkeep(n);
-
-          const over = checkGameOver(n);
-          if(over.over){
-            n = addLog(n, `遊戲結束：${over.reason}`);
-          }else{
-            n = addLog(n, `第 ${n.week} 週開始：AP 已重置`);
-          }
-          return n;
-        });
-      };
-
-      const openStatus = ()=>{
-        const housing = HOUSING_OPTIONS.find(h=>h.id===S.housingId);
-        const job = JOB_OPTIONS.find(j=>j.id===S.jobId) || JOB_OPTIONS.find(j=>j.id==="unemployed");
-        openModal({
-          title:"📋 身分確認",
-          body:"查看目前設定與風險狀態。",
-          render: ()=>(
-            <div>
-              <div className="two">
-                <div className="kv"><div className="k">年齡</div><div className="v">{S.age}</div></div>
-                <div className="kv"><div className="k">起始等級</div><div className="v">{S.originGrade || "-"}</div></div>
-              </div>
-
-              <div className="hr"></div>
-
-              <div className="card" style={{boxShadow:"var(--shadow-sm)"}}>
-                <div style={{fontWeight:900}}>目前配置</div>
-                <div className="hint" style={{marginTop:6}}>
-                  住房：{housing ? housing.name : "未選擇"}<br/>
-                  工作：{job.name}<br/>
-                  手機資安：{S.phoneSecurityChoice==="2fa" ? "已開啟2FA" : S.phoneSecurityChoice==="weak" ? "弱密碼" : "未設定"}<br/>
-                  每週儲蓄：${S.planWeeklySave}（自動）／每週預算：${S.planWeeklyBudget}
-                </div>
-              </div>
-
-              <div className="card" style={{boxShadow:"var(--shadow-sm)"}}>
-                <div style={{fontWeight:900}}>資產與狀態</div>
-                <div className="chiprow" style={{marginTop:8}}>
-                  <StatChip label="可用" value={`$${S.money}`} kind="info"/>
-                  <StatChip label="儲蓄" value={`$${S.savings}`} kind="vio"/>
-                  <StatChip label="資安" value={`${S.security}`} kind={S.security>=60?"ok":S.security>=40?"info":"bad"}/>
-                  <StatChip label="心情" value={`${S.mood}`} kind={S.mood>=60?"ok":S.mood>=40?"info":"bad"}/>
-                  <StatChip label="體力" value={`${S.health}`} kind={S.health>=60?"ok":S.health>=40?"info":"bad"}/>
-                </div>
-              </div>
-
-              <button className="opt" onClick={closeModal}>返回</button>
-            </div>
-          ),
-          options:[]
-        });
-      };
-
-      const openEnding = ()=>{
-        openModal({
-          title:"🏁 結算總評",
-          body:"本局結束，查看你的整體成果。",
-          render: ()=>(
-            <div>
-              <div className="two">
-                <div className="kv"><div className="k">總資產</div><div className="v">${score.wealth}</div></div>
-                <div className="kv"><div className="k">穩定度</div><div className="v">{score.stability}</div></div>
-              </div>
-              <div className="hr"></div>
-              <div className="card" style={{boxShadow:"var(--shadow-sm)"}}>
-                <div style={{fontWeight:900}}>等級評定</div>
-                <div className="hint" style={{marginTop:6}}>
-                  你的評定：<span className="badge info">Grade {score.grade}</span><br/>
-                  建議方向：<br/>
-                  1) 先穩定居住與收入，再談儲蓄放大。<br/>
-                  2) 資安是底線：不點陌生連結、不借帳戶、不先匯款。<br/>
-                  3) 心情與體力是續航：有資源就用資源，不硬撐。
-                </div>
-              </div>
-              <button className="opt" onClick={restart}>重新開始（清除存檔）</button>
-              <button className="opt" onClick={closeModal}>關閉</button>
-            </div>
-          ),
-          options:[]
-        });
-      };
-
-      // -------------------------
-      // Render
-      // -------------------------
-      const housing = HOUSING_OPTIONS.find(h=>h.id===S.housingId);
-      const job = JOB_OPTIONS.find(j=>j.id===S.jobId) || JOB_OPTIONS.find(j=>j.id==="unemployed");
-
-      return (
-        <div className="frame">
-          <div className="screen">
-            <div className="notch"></div>
-
-            {S.phase !== "onboarding" && (
-              <div className="topbar">
-                <div>第 {S.week} 週</div>
-                <div className="pill">
-                  <span><span className="k">AP</span> <span className="v">{S.ap}/{S.maxAp}</span></span>
-                  <span><span className="k">資安</span> <span className="v">{S.security}</span></span>
-                  <span><span className="k">心情</span> <span className="v">{S.mood}</span></span>
-                  <span><span className="k">體力</span> <span className="v">{S.health}</span></span>
-                </div>
-              </div>
-            )}
-
-            {/* ONBOARDING */}
-            {S.phase === "onboarding" && (
-              <div className="page">
-                <div className="content">
-                  <div className="h1">自立大冒險</div>
-                  <div className="sub">命運轉盤：決定你的出身</div>
-
-                  {!S.spinResult ? (
-                    <>
-                      <div className="wheel-wrap">
-                        <div className="wheel-shell">
-                          <div className="pointer"></div>
-                          <div className={"wheel " + (S.spinning ? "spinning":"")}></div>
-                        </div>
-                      </div>
-
-                      <button className="btn" onClick={spin}>
-                        {S.spinning ? "命運轉動中..." : "開始轉動 (START)"}
-                      </button>
-
-                      <button className="btn btn-secondary" style={{marginTop:10}} onClick={()=>{
-                        const saved = loadSave();
-                        if(saved && saved.state && saved.state.phase === "home"){
-                          setS({...INITIAL, ...saved.state, modal:null, spinning:false});
-                        }else{
-                          add("目前沒有可載入的存檔。");
-                        }
-                      }}>
-                        載入存檔（若有）
-                      </button>
-                    </>
-                  ) : (
-                    <div className="card">
-                      <div className="row">
-                        <div className="col">
-                          <div className="label">年齡</div>
-                          <div className="big">{S.spinResult.age} 歲</div>
-                        </div>
-                        <div className="col">
-                          <div className="label">初始存款</div>
-                          <div className="big">${S.spinResult.money}</div>
-                        </div>
-                      </div>
-
-                      <div style={{marginTop:10}}>
-                        <span className="badge">等級 {S.spinResult.grade}</span>
-                        <div className="hint" style={{marginTop:6, fontSize:14, color:"#222"}}>
-                          {S.spinResult.desc}
-                        </div>
-                      </div>
-
-                      <div style={{marginTop:12}} className="row">
-                        <button className="btn btn-secondary col" onClick={restart}>重新轉一次</button>
-                        <button className="btn col" onClick={choosePassword}>進入第一關</button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div className="footer" style={{height:260, minHeight:260}}>
-                  <div className="log-title">
-                    <span>SYSTEM LOGS</span>
-                    <span style={{opacity:.8}}>● ONLINE</span>
-                  </div>
-                  <div className="logs">
-                    {S.logs.map((l, i) => <div className="log" key={i}>{l}</div>)}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* HOME */}
-            {S.phase === "home" && (
-              <div className="page">
-                <div className="money-bar">
-                  <div className="money-title">
-                    <span>可用餘額 (FUNDS)</span>
-                    <span className="badge gray">週次 {S.week}/{S.maxWeeks}</span>
-                  </div>
-
-                  <div className="money">
-                    <span>${S.money}</span>
-                    <span className="mini">
-                      <span className="badge vio">儲蓄 ${S.savings}</span>
-                      <span className="badge gray">居住：{housing ? housing.name : "未選"}</span>
-                      <span className="badge gray">工作：{job.name}</span>
-                    </span>
-                  </div>
-                </div>
-
-                <div className="content" style={{padding:14}}>
-                  {/* Quick Actions */}
-                  <div className="card" style={{boxShadow:"var(--shadow-sm)"}}>
-                    <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:10}}>
-                      <div style={{fontWeight:900}}>本週操作</div>
-                      <div style={{display:"flex", gap:8, flexWrap:"wrap", justifyContent:"flex-end"}}>
-                        <span className={"badge " + (S.activeEvent ? "bad":"ok")}>
-                          事件：{S.activeEvent ? "待處理" : "已處理"}
-                        </span>
-                        <span className="badge info">AP {S.ap}/{S.maxAp}</span>
-                      </div>
-                    </div>
-
-                    <div className="row" style={{marginTop:10}}>
-                      <button className="btn btn-blue col" onClick={openEvent} disabled={!S.activeEvent}>
-                        處理事件（AP依選項）
-                      </button>
-                      <button className="btn btn-secondary col" onClick={openStatus}>
-                        身分確認
-                      </button>
-                    </div>
-
-                    <div className="row" style={{marginTop:10}}>
-                      <button className="btn btn-orange col" onClick={openShop}>
-                        商店（不扣AP）
-                      </button>
-                      <button className="btn btn-green col" onClick={endWeek} disabled={gameOver.over}>
-                        結束本週（週結算）
-                      </button>
-                    </div>
-
-                    {gameOver.over && (
-                      <button className="btn btn-vio" style={{marginTop:10}} onClick={openEnding}>
-                        查看結算總評
-                      </button>
-                    )}
-                  </div>
-
-                  {/* App Grid */}
-                  <div className="grid" style={{padding:"14px 0 0"}}>
-                    <div className="app orange" onClick={openHousing}>
-                      <div className="icon">🏠</div>
-                      租屋中心
-                      <div className="hint">押金/房租/安全</div>
-                    </div>
-                    <div className="app blue" onClick={openJob}>
-                      <div className="icon">💼</div>
-                      人力銀行
-                      <div className="hint">工作/收入/壓力</div>
-                    </div>
-                    <div className="app green" onClick={openResource}>
-                      <div className="icon">🗺️</div>
-                      資源地圖
-                      <div className="hint">支持/補助/諮詢</div>
-                    </div>
-                    <div className="app purple" onClick={openFinance}>
-                      <div className="icon">💳</div>
-                      財務管家
-                      <div className="hint">預算/儲蓄/測驗</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="footer">
-                  <div className="log-title">
-                    <span>SYSTEM LOGS</span>
-                    <span style={{opacity:.8}}>● ONLINE</span>
-                  </div>
-                  <div className="logs">
-                    {S.logs.map((l, i) => <div className="log" key={i}>{l}</div>)}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Modal */}
-            {S.modal && (
-              <div className="overlay">
-                <div className="modal">
-                  <div className="modal-title">{S.modal.title}</div>
-                  <div style={{fontWeight:900, marginTop:6}}>{S.modal.body}</div>
-
-                  {S.modal.render ? (
-                    <div style={{marginTop:10}}>{S.modal.render()}</div>
-                  ) : (
-                    <div>
-                      {(S.modal.options || []).map((op, idx)=>(
-                        <button key={idx} className="opt" onClick={op.action}>{op.label}</button>
-                      ))}
-                      <button className="opt" onClick={closeModal}>關閉</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-          </div>
+    <div id="crash-report"></div>
+    <div id="root">
+        <div id="loading-msg">
+            SYSTEM BOOTING...<br>
+            <span style="font-size: 0.8em; opacity: 0.8">載入中，請稍候</span>
         </div>
-      );
-    }
+    </div>
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-  </script>
+    <!-- 2. 錯誤攔截器 -->
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            document.getElementById('loading-msg').style.display = 'none';
+            const report = document.getElementById('crash-report');
+            report.style.display = 'block';
+            report.innerHTML = `<h1>⚠️ 系統發生錯誤</h1><hr><strong>Message:</strong> ${msg}\n<strong>Line:</strong> ${line}\n<strong>Error:</strong> ${error ? error.stack : 'N/A'}`;
+            return false;
+        };
+    </script>
+
+    <!-- 3. 遊戲主程式 -->
+    <script type="text/babel">
+        // --- 基礎圖示元件 ---
+        const Icon = ({ children, size = 24, ...props }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>{children}</svg>
+        );
+
+        // --- 所有圖示定義 (IconXxx) ---
+        const IconHome = (p) => <Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>;
+        const IconBriefcase = (p) => <Icon {...p}><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></Icon>;
+        const IconMap = (p) => <Icon {...p}><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"/><line x1="9" x2="9" y1="3" y2="18"/><line x1="15" x2="15" y1="6" y2="21"/></Icon>;
+        const IconCreditCard = (p) => <Icon {...p}><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></Icon>;
+        const IconAlert = (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" x2="12" y1="9" y2="13"/><line x1="12" x2="12.01" y1="17" y2="17"/></Icon>;
+        const IconHeart = (p) => <Icon {...p}><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></Icon>;
+        const IconSmile = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></Icon>;
+        const IconShield = (p) => <Icon {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></Icon>;
+        const IconHelp = (p) => <Icon {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></Icon>;
+        const IconShop = (p) => <Icon {...p}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></Icon>;
+        const IconClose = (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>;
+        const IconZap = (p) => <Icon {...p}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></Icon>;
+        const IconDollar = (p) => <Icon {...p}><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></Icon>;
+        const IconMoon = (p) => <Icon {...p}><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></Icon>;
+        const IconLock = (p) => <Icon {...p}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></Icon>;
+        const IconTerminal = (p) => <Icon {...p}><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></Icon>;
+        const IconCheck = (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>;
+        const IconRight = (p) => <Icon {...p}><path d="m9 18 6-6-6-6"/></Icon>;
+        const IconReceipt = (p) => <Icon {...p}><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 17V7"/></Icon>;
+        const IconLeft = (p) => <Icon {...p}><line x1="19" x2="5" y1="12" y2="12"/><polyline points="12 19 5 12 12 5"/></Icon>;
+        const IconBuilding = (p) => <Icon {...p}><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></Icon>;
+        const IconLandmark = (p) => <Icon {...p}><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></Icon>;
+        const IconUsers = (p) => <Icon {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>;
+        const IconBook = (p) => <Icon {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></Icon>;
+        const IconBrain = (p) => <Icon {...p}><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></Icon>;
+        const IconUser = (p) => <Icon {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></Icon>;
+        const IconTrend = (p) => <Icon {...p}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></Icon>;
+
+        // --- 遊戲資料 ---
+        const INITIAL_STATS = { money: 0, health: 100, mood: 100, security: 50, week: 1, maxWeeks: 8, age: 18, ap: 3, maxAp: 3 };
+        
+        const CHARACTER_ORIGINS = [
+            { grade: 'A', money: 0, desc: '身無分文', prob: 0.1 },
+            { grade: 'B', money: 2000, desc: '勉強餬口', prob: 0.3 },
+            { grade: 'C', money: 4000, desc: '稍有積蓄', prob: 0.3 },
+            { grade: 'D', money: 6000, desc: '一般小康', prob: 0.2 },
+            { grade: 'E', money: 8000, desc: '資源豐富', prob: 0.1 }
+        ];
+
+        const GENERIC_JOB_QUESTIONS = [
+            { q: '老闆說試用期不給薪水，這樣合法嗎？', options: ['合法', '不合法'], ans: 1, feedback: '勞基法規定試用期也要給薪！' },
+            { q: '面試官要求先繳保證金，你應該？', options: ['繳錢', '拒絕'], ans: 1, feedback: '求職不應先繳錢，這是詐騙常見手法。' },
+            { q: '工作時不小心受傷算公傷嗎？', options: ['算，雇主需負責', '不算，自己不小心'], ans: 0, feedback: '工作中受傷屬於職業災害，雇主有補償責任。' },
+            { q: '國定假日（如中秋節）上班薪水怎麼算？', options: ['跟平常一樣', '雙倍薪資'], ans: 1, feedback: '國定假日出勤應加倍發給工資。' },
+            { q: '為了領薪水，要把存摺印章交給公司保管？', options: ['好', '不行'], ans: 1, feedback: '交出帳戶個資極可能淪為詐騙人頭戶。' },
+            { q: '如果老闆說因為生意不好要扣你薪水？', options: ['共體時艱', '違法，薪水全額給付'], ans: 1, feedback: '經營風險由雇主承擔，不得任意扣薪。' }
+        ];
+
+        const JOBS = [
+            { id: 1, title: '派報生', wage: 183, energy: 20, mood: -10, minAge: 15, desc: '需長時間站立，風吹日曬。', risk: '中暑', apCost: 1, interviews: [{ q: '要在太陽下站很久，可以嗎？', options: ['可以', '不行'], ans: 0 }] },
+            { id: 2, title: '便利商店', wage: 200, energy: 25, mood: -15, minAge: 16, desc: '需十八般武藝，小心假鈔。', apCost: 1, interviews: [{ q: '交身分證保管？', options: ['好', '不行'], ans: 1 }] },
+            { id: 3, title: '工地粗工', wage: 300, energy: 45, mood: -20, minAge: 16, desc: '高薪但危險，需注意工安。', apCost: 1, interviews: [{ q: '不保勞健保領現金？', options: ['好', '不行'], ans: 1 }] },
+            { id: 4, title: '補習班工讀', wage: 220, energy: 15, mood: -5, minAge: 18, desc: '環境單純，需細心檢查。', apCost: 1, strictAge: true, interviews: [{ q: '家長有時候講話比較大聲，你能忍耐嗎？', options: ['可以，保持專業', '不行，我會罵回去'], ans: 0, feedback: 'EQ很高，錄取！' }] },
+            { id: 5, title: '餐飲服務', wage: 190, energy: 30, mood: -10, minAge: 16, desc: '供一餐，忙碌時需久站。', apCost: 1, interviews: [{ q: '試用期不支薪？', options: ['接受', '違法'], ans: 1 }] },
+            { id: 6, title: '外送平台', wage: 280, energy: 25, mood: -15, minAge: 18, desc: '需自備機車，車禍風險高。', apCost: 1, strictAge: true, interviews: [{ q: '加入前請先匯款 $2000 買裝備才能開通？', options: ['立刻匯款', '查證官方管道'], ans: 1, feedback: '這是詐騙！小心求職陷阱。' }] },
+            { id: 7, title: '賣場試吃', wage: 195, energy: 20, mood: -5, minAge: 16, desc: '需熱情招呼，面對奧客。', apCost: 1, interviews: [{ q: '剩下的試吃品如果沒發完，要自己買回家？', options: ['好吧', '拒絕'], ans: 1 }] },
+            { id: 8, title: '加油站', wage: 185, energy: 25, mood: -15, minAge: 16, desc: '需吸入油氣，輪班制。', apCost: 1, interviews: [{ q: '遇到客人故意刁難，你會怎麼做？', options: ['跟客人吵架', '請站長協助處理'], ans: 1, feedback: '反應得體，錄取。' }] },
+        ];
+
+        const HOUSING = [
+            { id: 'ccsa', title: 'CCSA 自立宿舍', rent: 0, deposit: 0, security: 10, desc: '社工輔導，免租金，需遵守公約。', safe: true, quizType: 'ccsa_interview', area: '機構' },
+            { id: 'rooftop', title: '便宜頂樓加蓋', rent: 5000, deposit: 10000, security: -10, desc: '冬冷夏熱，電費高，違建風險。', safe: false, quizType: 'house_check', area: '市區' },
+            { id: 'basement', title: '地下室雅房', rent: 3500, deposit: 7000, security: -5, desc: '潮濕無窗，空氣差，容易生病。', safe: false, quizType: 'house_check', area: '郊區' },
+            { id: 'shared', title: '溫馨分租雅房', rent: 6500, deposit: 13000, security: 5, desc: '共用衛浴，需遵守生活公約。', safe: true, quizType: 'contract_check', area: '學區' },
+            { id: 'dorm', title: '學校宿舍', rent: 4000, deposit: 4000, security: 15, desc: '便宜安全，但寒暑假需搬離。', safe: true, quizType: 'rule_check', area: '校內' },
+            { id: 'relative', title: '親戚家客廳', rent: 2000, deposit: 0, security: 5, desc: '便宜但毫無隱私，需看人臉色。', safe: true, quizType: 'relative_check', area: '親友' },
+            { id: 'coliving', title: '共生公寓', rent: 7500, deposit: 15000, security: 10, desc: '裝潢美、有社群活動，租金較高。', safe: true, quizType: 'contract_check', area: '市區' },
+            { id: 'studio', title: '獨立電梯套房', rent: 9000, deposit: 18000, security: 20, desc: '隱私極佳，有管理員，負擔重。', safe: true, quizType: 'contract_check', area: '精華區' }
+        ];
+
+        const SHOP_ITEMS = [
+            { id: 'bento', name: '營養便當', price: 100, effect: { health: 15 }, desc: '恢復體力，健康飲食。', payMethod: ['cash'], icon: 'food' },
+            { id: 'health_insurance', name: '繳納健保費', price: 826, effect: { item: 'health_insurance' }, desc: '看病只需付掛號費。', payMethod: ['cash'], icon: 'health' },
+            { id: 'accident_insurance', name: '意外險 (保單)', price: 1500, effect: { item: 'accident_insurance' }, desc: '發生車禍意外時提供理賠。', payMethod: ['cash', 'credit'], icon: 'shield' },
+            { id: 'supplements', name: '維他命B群', price: 600, effect: { health: 5, energyMax: 10 }, desc: '增強免疫力與精神。', payMethod: ['cash'], icon: 'pill' },
+            { id: 'scam_invest', name: '飆股內線消息', price: 3000, effect: { mood: -50 }, desc: '保證獲利200%？老師帶你飛？', payMethod: ['cash'], icon: 'trend', scam: true },
+            { id: 'bubble_tea', name: '手搖飲料', price: 70, effect: { mood: 5, health: -2 }, desc: '快樂水，但喝多不健康。', payMethod: ['cash'], icon: 'drink' },
+            { id: 'clothes', name: '網購新衣', price: 1200, effect: { mood: 15 }, desc: '換季了，買件新衣服犒賞自己。', payMethod: ['cash', 'credit', 'bnpl'], icon: 'shirt' },
+            { id: 'concert', name: '演唱會門票', price: 3500, effect: { mood: 40 }, desc: '偶像的演唱會！心靈大滿足。', payMethod: ['cash', 'credit', 'bnpl'], icon: 'music' },
+            { id: 'phone', name: '新款 iPhone', price: 30000, effect: { mood: 80 }, desc: '拍照漂亮，朋友都在用。', payMethod: ['cash', 'credit', 'bnpl'], icon: 'phone' },
+        ];
+
+        const SCENARIOS = {
+            friend_loan: {
+                id: 'friend_loan',
+                title: '義氣相挺？',
+                desc: '國中死黨突然私訊：「兄弟，急用 $3000，下週還你！」',
+                type: 'scam', 
+                checkStat: 'security', 
+                threshold: 50,
+                penalty: { money: -3000, mood: -10 }, 
+                pass: { msg: '婉拒了朋友的請求，守住了錢包。' }
+            },
+            police: { id: 'police', title: '警察臨檢', desc: '深夜遊蕩，警察要求出示證件...', type: 'risk' },
+            sickness: { id: 'sickness', title: '突發疾病', desc: '最近溫差大，你突然發高燒...', type: 'health_risk', checkItem: 'health_insurance', penalty: { money: -1500, health: -10, mood: -20 }, pass: { money: -150, health: 10 } },
+            scam_romance: { id: 'scam_romance', title: '假愛真詐', desc: '網公網婆借錢：「親愛的，能借我5000應急嗎？」', type: 'scam', checkStat: 'security', threshold: 60, penalty: { money: -5000, mood: -50 }, pass: { msg: '警覺異常，直接封鎖' } },
+            scam_job: { id: 'scam_job', title: '求職陷阱', desc: '簡訊：「出租銀行帳戶，日領3000！」', type: 'scam', checkStat: 'security', threshold: 70, penalty: { money: 0, mood: -80 }, pass: { msg: '拒絕當人頭戶' } },
+            accident: { id: 'accident', title: '交通意外', desc: '趕路時不小心發生擦撞...', type: 'accident_risk', checkItem: 'accident_insurance', penalty: { money: -5000, health: -20, mood: -40 }, pass: { money: 0, health: -5 } }
+        };
+
+        const QUIZ_DB = {
+            ccsa_aid: { title: 'CCSA 經濟補助', questions: [{q: '這筆補助款下來後，可以拿去儲值遊戲嗎？', options:['可以，是我的錢','不行，應用於生活必要開支'], ans:1},{q: '申請補助通常需要提供什麼證明文件？', options:['只要口頭說就好','相關收據、證明或計畫書'], ans:1},{q: '如果你的經濟狀況改善了，需要告知社工嗎？', options:['需要，誠實回報','不用，怕補助被取消'], ans:0},{q: '社工要求你每個月記帳並回傳，你的態度是？', options:['太麻煩了不想做','願意配合，這能幫助我理財'], ans:1},{q: '如果為了申請補助而編造假的支出理由，會有什麼後果？', options:['沒關係','涉及詐欺與偽造文書，會觸法'], ans:1}] },
+            ccsa_interview: { title: 'CCSA 宿舍評估', questions: [{q: '宿舍有門禁時間（例如晚上10點），你能配合嗎？', options:['可以，我會準時回來','不行，我要自由'], ans:0},{q: '入住期間必須配合「儲蓄計畫」，每個月存錢，你願意嗎？', options:['願意，我想存錢','我的錢我自己管'], ans:0},{q: '朋友想來借住幾天，你可以隨便帶人回來過夜嗎？', options:['可以，講義氣','不行，需遵守訪客規定'], ans:1},{q: '宿舍內禁止吸菸飲酒，你可以遵守嗎？', options:['可以','不行，我有我的習慣'], ans:0},{q: '如果發生室友糾紛，你應該？', options:['直接吵架打架','找社工協助協調'], ans:1}] },
+            ccsa_training: { title: '自立培訓課程', questions: [{q: '課程中，講師提到記帳的重要性，你覺得呢？', options:['沒用，錢不夠就是不夠','有用，能釐清開銷去向'], ans:1},{q: '遇到職場霸凌時，講師建議怎麼做？', options:['忍氣吞聲','蒐證並尋求管道申訴'], ans:1},{q: '理財的第一步是什麼？', options:['投資股票','建立緊急預備金'], ans:1}] },
+            ccsa_counseling: { title: '心理諮商', questions: [{q: '最近壓力很大，睡不著覺，諮商師問你怎麼了？', options:['不想說，說了也沒用','試著表達自己的焦慮與擔憂'], ans:1},{q: '諮商過程中，諮商師提到「自我照顧」，意思是？', options:['自私只顧自己','在照顧他人前先照顧好自己的身心'], ans:1},{q: '覺得心情低落持續兩週以上，可能需要？', options:['多喝水就好','尋求專業醫療或諮商協助'], ans:1}] },
+            ccsa_group: { title: '支持團體', questions: [{q: '團體中，有夥伴分享了他失敗的經驗，你應該？', options:['嘲笑他','給予傾聽與鼓勵'], ans:1},{q: '參加支持團體的主要目的是？', options:['互助與經驗交流','借錢'], ans:0},{q: '在團體中聽到別人的隱私故事，可以到處宣傳嗎？', options:['可以，很精彩','不行，需遵守保密原則'], ans:1}] },
+            house_check: { title: '看房檢核', questions: [{q: '頂樓加蓋通常有什麼隱藏缺點？', options:['視野好空氣好','冬冷夏熱且可能有違建拆除風險'], ans:1},{q: '看房時發現熱水器裝在室內（無強制排氣），安全嗎？', options:['很危險，有一氧化碳中毒風險','沒關係，冬天比較暖'], ans:0},{q: '牆壁角落有油漆剝落和黑色斑點，可能是？', options:['壁癌與漏水問題','只是髒了擦掉就好'], ans:0},{q: '這間房間沒有對外窗，會有什麼問題？', options:['隱私很好','通風採光差，容易潮濕發霉'], ans:1},{q: '馬桶沖水鈕按下後，水流很小且緩慢，表示？', options:['省水裝置','管線老舊或水壓不足'], ans:1}] },
+            contract_check: { title: '租約知識', questions: [{q: '房東要求押金一次付「3個月」，這合法嗎？', options:['合法，房東說了算','不合法，法規上限為2個月'], ans:1},{q: '房東說電費「一度 8 元」，合理嗎？', options:['太貴了，且可能違法','合理，現在電費很貴'], ans:0},{q: '房東要求看你的身分證，並想「扣留」身分證抵押？', options:['好，為了租房','不行，只能借看不能扣留'], ans:1},{q: '如果你未滿 18 歲要簽約，通常需要誰的同意？', options:['法定代理人/家長','里長'], ans:0},{q: '合約中寫「租客不得報稅」，這條款有效嗎？', options:['有效，要遵守','無效，違反法律規定'], ans:1}] },
+            finance_help: { title: '急難救助申請', questions: [{q: '急難救助金的申請條件是什麼？', options:['只要存款少就可以','需有急難事實（如傷病、失業）且影響生計'], ans:1},{q: '申請時通常需要準備什麼？', options:['身分證與相關證明文件','只要人到就好'], ans:0},{q: '領到救助金後，可以用來買新款手機嗎？', options:['可以','不行，應用於生活急需'], ans:1}] },
+            welfare_help: { title: '社福中心諮詢', questions: [{q: '社福中心提供的服務不包含哪一項？', options:['家庭支持與福利諮詢','借錢投資'], ans:1},{q: '如果生活遇到困難，不知道該找誰求助，可以去哪裡？', options:['地下錢莊','社會福利服務中心'], ans:1},{q: '社工可以協助你什麼？', options:['直接給你無限的錢','連結資源、提供諮詢與陪伴'], ans:1}] },
+            job_test: { title: '職能適性測驗', questions: [{q: '在職場上遇到不懂的問題，你應該？', options:['裝懂，以免被罵','虛心請教同事或主管'], ans:1},{q: '對於主管交辦的任務，如果有困難完成，應該？', options:['提早回報並尋求協助','等到最後一刻再說'], ans:0},{q: '同事在背後說別人壞話，你應該？', options:['加入一起講','保持中立，專注工作'], ans:1},{q: '上班遲到了，第一時間應該做什麼？', options:['偷偷溜進去','先通知主管並說明預計抵達時間'], ans:1},{q: '對於公司的機密資料（如客戶名單），應該？', options:['嚴格保密','帶回家參考'], ans:0}] },
+            rule_check: { title: '宿舍規範', questions: [{q: '寒暑假學校宿舍通常需要做什麼？', options:['可以繼續住','通常需淨空離宿'], ans:1},{q: '共用冰箱裡的食物被偷吃了，最好的預防方式？', options:['在食物上寫名字','在食物裡加辣'], ans:0},{q: '在宿舍使用高功率電器（如電磁爐）安全嗎？', options:['安全','可能造成跳電，需確認規定'], ans:1}] },
+            relative_check: { title: '寄住禮儀', questions: [{q: '住在親戚家，生活作息應該？', options:['隨心所欲，當作自己家','配合親戚家作息，保持禮貌'], ans:1},{q: '親戚過度詢問你的隱私或工作，你應該？', options:['禮貌簡短回應，保持距離','直接翻臉搬走'], ans:0},{q: '對於親戚家的水電使用，應該？', options:['盡量節省','盡情使用'], ans:0}] }
+        };
+
+        // --- Components ---
+        const FloatingTextOverlay = ({ texts }) => (
+            <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
+                {texts.map(ft => (
+                    <div key={ft.id} className={`absolute left-1/2 top-1/2 -translate-x-1/2 text-2xl font-bold font-pixel animate-float whitespace-nowrap ${ft.type === 'success' ? 'text-lime-400' : 'text-red-500'}`} style={{ textShadow: '2px 2px 0 #000' }}>
+                        {ft.text}
+                    </div>
+                ))}
+            </div>
+        );
+
+        const StatBar = ({ stats }) => (
+            <div className="bg-zinc-900 border-b-4 border-black p-2 flex justify-between items-center text-xs font-mono text-white sticky top-0 z-20 neo-shadow-sm">
+                <div className="flex gap-2 items-center">
+                    <span className="bg-red-600 px-2 py-1 text-white font-bold rounded">第 {stats.week} 週</span>
+                    <div className="flex items-center gap-1 text-rose-400"><IconHeart size={12} /> {stats.health}</div>
+                    <div className="flex items-center gap-1 text-violet-400"><IconSmile size={12} /> {stats.mood}</div>
+                </div>
+                <div className="flex gap-2 items-center">
+                    <div className="flex items-center gap-1 text-cyan-400"><IconShield size={12} /> {stats.security}</div>
+                    <div className="flex gap-1">
+                        {[...Array(stats.maxAp)].map((_, i) => (
+                            <div key={i} className={`w-2 h-4 border border-white ${i < stats.ap ? 'bg-yellow-400' : 'bg-zinc-700'}`}></div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const AppIcon = ({ icon: Icon, label, color, onClick, badge }) => (
+            <button onClick={onClick} className="aspect-square bg-zinc-100 border-2 border-black neo-shadow hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none transition-all flex flex-col items-center justify-center gap-1 relative group neo-btn">
+                <div className={`p-3 rounded-none border-2 border-black ${color} text-black`}>
+                    <Icon size={24} strokeWidth={2.5} />
+                </div>
+                <span className="font-bold text-xs text-black font-main tracking-wide mt-2">{label}</span>
+                {badge && <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center border-2 border-black rounded-full animate-bounce">!</div>}
+            </button>
+        );
+
+        const Modal = ({ title, children, color = 'bg-white' }) => (
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                <div className={`${color} w-full max-w-sm border-4 border-black p-4 neo-shadow relative animate-bounce-in`}>
+                    <div className="bg-black text-white px-2 py-1 inline-block font-pixel text-lg mb-4 transform -translate-y-6 -rotate-2 border-2 border-white">
+                        {title}
+                    </div>
+                    {children}
+                </div>
+            </div>
+        );
+
+        // --- Render Sub-Components (Hoisted for clarity) ---
+
+        const RenderOnboarding = ({ spinResult, spinning, spinForCharacter, updateStats, setGameState }) => (
+            <div className="flex flex-col items-center justify-center h-full p-6 text-black">
+                {!spinResult ? (
+                    <>
+                        <h1 className="text-4xl font-black mb-4 font-pixel">自立大冒險</h1>
+                        <div className={`w-48 h-48 rounded-full border-8 border-black bg-white flex items-center justify-center mb-8 neo-shadow relative ${spinning ? 'animate-spin-fast' : ''}`}><IconHelp size={64} className="text-black"/></div>
+                        <button onClick={spinForCharacter} disabled={spinning} className="w-full bg-black text-white text-xl font-bold py-4 border-4 border-transparent hover:border-white neo-shadow disabled:opacity-50">{spinning ? '命運轉動中...' : '開始轉動 (START)'}</button>
+                    </>
+                ) : (
+                    <div className="w-full animate-bounce-in">
+                        <div className="bg-white border-4 border-black p-6 neo-shadow mb-6 text-center">
+                            <h2 className="text-2xl font-black mb-4">身分確認</h2>
+                            <div className="grid grid-cols-2 gap-4 text-left"><div><span className="text-xs text-gray-500">年齡</span><div className="text-3xl font-pixel">{spinResult.age}</div></div><div><span className="text-xs text-gray-500">存款</span><div className="text-3xl font-pixel">${spinResult.money}</div></div></div>
+                            <div className="mt-4 bg-gray-100 p-2 text-sm">{spinResult.desc}</div>
+                        </div>
+                        <div className="space-y-2">
+                            <button onClick={() => { updateStats({ security: -20 }); setGameState('home'); }} className="w-full p-3 bg-gray-100 border-2 border-black hover:bg-red-100 text-left font-bold">1. 密碼 123456 (方便好記)</button>
+                            <button onClick={() => { updateStats({ security: 10 }); setGameState('home'); }} className="w-full p-3 bg-gray-100 border-2 border-black hover:bg-green-100 text-left font-bold">2. 開啟雙重驗證 (安全)</button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+
+        const RenderHome = ({ stats, inventory, bills, logs, setGameState, advanceWeek }) => (
+            <div className="h-full bg-zinc-800 flex flex-col relative font-main">
+                <div className="bg-gray-100 p-4 border-b-4 border-black mb-4 neo-shadow relative z-10">
+                    <div className="flex justify-between items-end">
+                        <div><div className="text-xs font-bold text-gray-500">FUNDS</div><div className="text-4xl font-black font-pixel">${stats.money}</div></div>
+                        <div className="text-right"><div className="text-xs font-bold text-gray-500">AGE: {stats.age}</div>{bills.length > 0 && <span className="text-xs bg-red-500 text-white px-1">未繳帳單</span>}</div>
+                    </div>
+                </div>
+                {stats.mood < 30 && <div className="mx-4 mb-2 bg-red-500 text-white p-2 text-sm font-bold text-center animate-pulse border-2 border-red-700">⚠️ 心情過低！請使用「休息」或購買娛樂項目！</div>}
+                <div className="grid grid-cols-2 gap-4 px-4 mb-auto z-10">
+                    <AppIcon icon={IconHome} label="租屋中心" color="bg-orange-400" onClick={() => setGameState('app_house')} badge={!inventory.hasHouse} />
+                    <AppIcon icon={IconBriefcase} label="人力銀行" color="bg-blue-400" onClick={() => setGameState('app_job')} />
+                    <AppIcon icon={IconMap} label="資源地圖" color="bg-emerald-400" onClick={() => setGameState('app_resource')} />
+                    <AppIcon icon={IconCreditCard} label="財務管家" color="bg-violet-400" onClick={() => setGameState('app_finance')} />
+                    <div className="col-span-2 mt-2"><button onClick={advanceWeek} className="w-full bg-zinc-900 text-white border-2 border-black p-3 font-bold flex items-center justify-center gap-2 neo-shadow neo-btn"><IconMoon size={18} className="text-yellow-400"/> {stats.ap === 0 ? '下週 (休息)' : '結束本週'}</button></div>
+                </div>
+                <div className="bg-zinc-900 p-4 border-t-4 border-zinc-700 h-64 flex flex-col overflow-y-auto custom-scroll text-green-400 font-mono text-sm">{logs.map((l, i) => <div key={i} className="mb-1">{l}</div>)}</div>
+            </div>
+        );
+
+        const RenderJobs = ({ stats, inventory, addLog, updateStats, startJobInterview, setGameState }) => (
+            <div className="h-full flex flex-col bg-slate-50 font-main">
+                <div className="bg-blue-600 text-white p-3 shadow-md flex items-center gap-3 app-header"><button onClick={() => setGameState('home')}><IconLeft/></button><h2 className="font-bold">人力銀行</h2></div>
+                <div className="p-3 space-y-3 overflow-y-auto flex-1">
+                    {JOBS.map(job => {
+                        const ok = stats.age >= job.minAge || (inventory.items.includes('accompaniment_card') && !job.strictAge);
+                        return (
+                            <div key={job.id} className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+                                <div className="flex justify-between"><h3 className="font-bold">{job.title}</h3><span className="text-blue-600 font-bold">${job.wage}/hr</span></div>
+                                <p className="text-sm text-gray-500 my-2">{job.desc}</p>
+                                <button disabled={stats.ap < job.apCost || !ok} onClick={() => { if(stats.ap < 1) addLog('太累了'); else { startJobInterview(job); } }} className="w-full bg-blue-600 text-white font-bold py-2 rounded disabled:bg-gray-300">{!ok ? '資格不符 (需社工陪同或年齡)' : `應徵 (${job.apCost} AP)`}</button>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+
+        const RenderHousing = ({ stats, inventory, addLog, updateStats, startQuiz, setInventory, setGameState }) => (
+            <div className="h-full flex flex-col bg-slate-50 font-main">
+                <div className="bg-orange-500 text-white p-3 shadow-md flex items-center gap-3 app-header"><button onClick={() => setGameState('home')}><IconLeft/></button><h2 className="font-bold">好屋租房</h2></div>
+                <div className="p-3 space-y-3 overflow-y-auto flex-1">
+                    {inventory.hasHouse ? <div className="bg-white p-6 text-center border-2 border-green-500 rounded"><IconCheck className="mx-auto text-green-500 mb-2"/><h3 className="font-bold">已入住: {inventory.houseName}</h3></div> : 
+                    HOUSING.map(h => (
+                        <div key={h.id} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                            <div className="flex justify-between font-bold"><h3>{h.title}</h3><span className="text-orange-600">${h.rent}</span></div>
+                            <div className="text-xs bg-gray-100 inline-block px-1 rounded mb-2">押金 ${h.deposit}</div>
+                            <p className="text-sm text-gray-500 mb-2">{h.desc}</p>
+                            <button onClick={() => {
+                                if(stats.ap < 1) { addLog('沒體力'); return; }
+                                if(stats.age < 18 && !inventory.items.includes('accompaniment_card') && h.id !== 'ccsa') { alert('未滿18需社工陪同'); return; }
+                                updateStats({ap:-1});
+                                startQuiz(h.quizType, (pass) => {
+                                    if(pass) {
+                                        if(stats.money >= h.deposit || h.rent === 0) { updateStats({money: -h.deposit, security: h.security}); setInventory(p => ({...p, hasHouse: true, houseName: h.title})); addLog('簽約成功'); setGameState('home'); }
+                                        else addLog('錢不夠付押金');
+                                    } else addLog('看房檢核失敗');
+                                });
+                            }} className="w-full bg-orange-500 text-white font-bold py-2 rounded">預約看房 (1 AP)</button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+
+        const RenderResource = ({ stats, inventory, addLog, updateStats, startQuiz, setInventory, setGameState }) => (
+            <div className="h-full flex flex-col bg-slate-50 font-main">
+                <div className="bg-emerald-600 text-white p-3 shadow-md flex items-center gap-3 app-header"><button onClick={() => setGameState('home')}><IconLeft/></button><h2 className="font-bold">資源地圖</h2></div>
+                <div className="p-4 space-y-4 overflow-y-auto flex-1">
+                    <div className="bg-white p-4 rounded-lg border border-slate-200">
+                        <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2"><IconHome className="text-orange-500"/> CCSA 自立服務</h3>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button onClick={() => startQuiz('ccsa_aid', (p) => { if(p) { updateStats({money:3000}); addLog('獲得補助'); setGameState('home'); } })} className="bg-orange-100 text-orange-700 py-2 rounded font-bold text-sm">經濟補助</button>
+                            <button onClick={() => {
+                                if(stats.ap < 1) { addLog('體力不足'); return; }
+                                if(inventory.items.includes('accompaniment_card')) { addLog('已有陪同卡'); return; }
+                                updateStats({ap:-1}); setInventory(p=>({...p, items:[...p.items, 'accompaniment_card']})); addLog('獲得社工陪同卡');
+                            }} className="bg-red-100 text-red-700 py-2 rounded font-bold text-sm">申請陪同</button>
+                        </div>
+                    </div>
+                    <div className="bg-white p-4 rounded-lg border border-slate-200">
+                        <h3 className="font-bold text-slate-800 mb-2 flex items-center gap-2"><IconLandmark className="text-slate-500"/> 公家機關</h3>
+                        <button onClick={() => {
+                            if(stats.age < 18) { addLog('未滿18無法辦良民證'); return; }
+                            if(inventory.items.includes('good_citizen_card')) { addLog('已持有'); return; }
+                            setInventory(p=>({...p, items:[...p.items, 'good_citizen_card']})); addLog('獲得良民證');
+                        }} className="w-full bg-slate-200 text-slate-700 py-2 rounded font-bold">辦理良民證</button>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const RenderFinance = ({ stats, bills, setPurchaseModal, setGameState }) => (
+            <div className="h-full flex flex-col bg-slate-50 font-main">
+                <div className="bg-violet-600 text-white p-3 shadow-md flex items-center gap-3 app-header"><button onClick={() => setGameState('home')}><IconLeft/></button><h2 className="font-bold">財務管家</h2></div>
+                <div className="p-4 space-y-4 overflow-y-auto flex-1">
+                    <div className="bg-white p-4 rounded border border-slate-200"><h3 className="font-bold mb-2">待繳帳單</h3>{bills.length ? bills.map((b,i)=><div key={i} className="text-sm flex justify-between"><span>{b.name}</span><span className="text-red-500">-${b.amount}</span></div>) : <div className="text-gray-400 text-sm">無帳單</div>}</div>
+                    <div className="grid grid-cols-1 gap-3">
+                        {SHOP_ITEMS.map(item => (
+                            <div key={item.id} className="bg-white p-3 rounded flex justify-between items-center shadow-sm" onClick={() => setPurchaseModal(item)}>
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-gray-100 p-2 rounded"><IconShop size={20}/></div>
+                                    <div><div className="font-bold">{item.name}</div><div className="text-xs text-gray-500">{item.desc}</div></div>
+                                </div>
+                                <div className="font-bold text-violet-600">${item.price}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const RenderEnding = ({ stats, inventory }) => {
+            const isSuccess = stats.money >= 0 && stats.health > 0;
+            const achievements = [];
+            if (inventory.hasHouse) achievements.push('有殼蝸牛');
+            if (inventory.items.includes('good_citizen_card')) achievements.push('良民模範');
+            if (inventory.items.includes('accompaniment_card')) achievements.push('善用資源');
+            if (stats.money > 15000) achievements.push('小小富翁');
+            if (stats.mood > 80) achievements.push('樂天派');
+
+            let title = '', message = '', color = '';
+            if (stats.money < 0) {
+                title = '負債累累的倖存者'; message = '這段旅程真的很不容易。雖然現在背負著債務，但請記得，這只是模擬。現實中，CCSA 與許多社福機構隨時準備伸出援手。不要放棄，重新規劃財務，你一定能度過難關！'; color = 'bg-zinc-200';
+            } else if (!inventory.hasHouse) {
+                title = '漂泊的旅人'; message = '雖然還沒有固定的住所，但你已經學會了如何在這個城市生存。存下一筆錢是很好的開始，下一步，試著為自己找個家吧！'; color = 'bg-blue-200';
+            } else if (stats.money < 5000) {
+                title = '勉強溫飽的房客'; message = '你有了住處，雖然手頭有點緊，但至少不用擔心風吹日曬。自立的第一步已經穩固，繼續加油！'; color = 'bg-orange-200';
+            } else {
+                title = '自立自強的模範生'; message = '太棒了！你不僅有了安身之處，還累積了可觀的積蓄。你的自立之路充滿希望，繼續保持這份智慧與韌性！'; color = 'bg-yellow-300';
+            }
+
+            return (
+                <div className={`flex flex-col h-full ${color} p-6 font-main overflow-y-auto`}>
+                    <div className="bg-white border-4 border-black p-6 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] mb-6 text-center animate-bounce-in">
+                        <h1 className="text-4xl font-black font-pixel mb-2">{isSuccess ? '恭喜通關' : '遊戲結束'}</h1>
+                        <h2 className="text-2xl font-bold text-violet-600 mb-4">{title}</h2>
+                        <p className="text-slate-600 leading-relaxed text-sm text-left">{message}</p>
+                    </div>
+                    <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-4">
+                        <h3 className="font-bold border-b-2 border-black pb-2 mb-2 flex items-center gap-2"><IconCreditCard size={20}/> 最終資產</h3>
+                        <div className="text-right"><span className={`text-4xl font-black font-pixel ${stats.money < 0 ? 'text-red-500' : 'text-green-600'}`}>${stats.money}</span></div>
+                    </div>
+                    <div className="bg-white border-4 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mb-6 flex-1">
+                        <h3 className="font-bold border-b-2 border-black pb-2 mb-2 flex items-center gap-2"><IconCheck size={20}/> 解鎖成就</h3>
+                        <div className="flex flex-wrap gap-2">{achievements.length > 0 ? achievements.map(ach => <span key={ach} className="bg-yellow-200 border-2 border-black px-2 py-1 text-xs font-bold rounded-full">{ach}</span>) : <span className="text-slate-400 text-xs">無特殊成就</span>}</div>
+                    </div>
+                    <button onClick={()=>window.location.reload()} className="w-full bg-black text-white text-xl font-bold py-4 border-4 border-white hover:bg-zinc-800 shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all">再來一局 (RESTART)</button>
+                </div>
+            );
+        };
+
+        // --- Main App Logic ---
+        function GameApp() {
+            const [gameState, setGameState] = React.useState('onboarding'); 
+            const [stats, setStats] = React.useState(INITIAL_STATS);
+            const [inventory, setInventory] = React.useState({ items: [], hasHouse: false, houseName: '' });
+            const [bills, setBills] = React.useState([]); 
+            const [floatingTexts, setFloatingTexts] = React.useState([]); 
+            const [currentEvent, setCurrentEvent] = React.useState(null);
+            const [activeQuiz, setActiveQuiz] = React.useState(null); 
+            const [purchaseModal, setPurchaseModal] = React.useState(null); 
+            const [logs, setLogs] = React.useState(['系統初始化完成...']);
+            const [screenEffect, setScreenEffect] = React.useState('');
+            const [spinning, setSpinning] = React.useState(false);
+            const [spinResult, setSpinResult] = React.useState(null);
+
+            const showFloat = (text, type = 'neutral') => {
+                const id = Date.now() + Math.random();
+                setFloatingTexts(prev => [...prev, { id, text, type }]);
+                setTimeout(() => {
+                    setFloatingTexts(prev => prev.filter(ft => ft.id !== id));
+                }, 1500);
+            };
+
+            const updateStats = (changes) => {
+                setStats(prev => {
+                    const newStats = { ...prev };
+                    if (changes.money !== undefined) {
+                        const diff = changes.money;
+                        showFloat(`${diff >= 0 ? '+' : ''}$${diff}`, diff >= 0 ? 'success' : 'danger');
+                        newStats.money += diff;
+                    }
+                    if (changes.health !== undefined) {
+                        showFloat(`${changes.health >= 0 ? '+' : ''}體力`, changes.health >= 0 ? 'success' : 'danger');
+                        newStats.health = Math.min(100, Math.max(0, newStats.health + changes.health));
+                    }
+                    if (changes.mood !== undefined) {
+                        showFloat(`${changes.mood >= 0 ? '+' : ''}心情`, changes.mood >= 0 ? 'success' : 'danger');
+                        newStats.mood = Math.min(100, Math.max(0, newStats.mood + changes.mood));
+                    }
+                    if (changes.security !== undefined) {
+                        showFloat(`${changes.security >= 0 ? '+' : ''}資安`, changes.security >= 0 ? 'success' : 'danger');
+                        newStats.security = Math.min(100, Math.max(0, newStats.security + changes.security));
+                    }
+                    if (changes.ap !== undefined) {
+                        if (changes.ap < 0) showFloat(`${changes.ap} AP`, 'danger');
+                        newStats.ap = Math.max(0, newStats.ap + changes.ap);
+                    }
+                    if (changes.maxAp !== undefined) {
+                        showFloat(`體力上限 +${changes.maxAp}`, 'success');
+                        newStats.maxAp += changes.maxAp;
+                    }
+                    return newStats;
+                });
+            };
+
+            React.useEffect(() => {
+                if (stats.week > stats.maxWeeks) {
+                    setGameState('ending');
+                    return;
+                }
+                if (stats.mood < 30 || stats.security < 30) {
+                    setScreenEffect('glitch');
+                    const timer = setTimeout(() => setScreenEffect(''), 500);
+                    return () => clearTimeout(timer);
+                } else {
+                    setScreenEffect('');
+                }
+            }, [stats.mood, stats.security, stats.week, stats.maxWeeks]); 
+
+            const spinForCharacter = () => {
+                setSpinning(true);
+                setTimeout(() => {
+                    const rand = Math.random();
+                    let accumulatedProb = 0;
+                    let selectedOrigin = CHARACTER_ORIGINS[0];
+                    for (let origin of CHARACTER_ORIGINS) {
+                        accumulatedProb += origin.prob;
+                        if (rand <= accumulatedProb) {
+                            selectedOrigin = origin;
+                            break;
+                        }
+                    }
+                    const randomAge = Math.floor(Math.random() * 5) + 15;
+                    setSpinResult({ ...selectedOrigin, age: randomAge });
+                    setSpinning(false);
+                    setStats(prev => ({ ...prev, money: selectedOrigin.money, age: randomAge }));
+                }, 2000);
+            };
+
+            const advanceWeek = () => {
+                let livingCost = 1500;
+                if (inventory.hasHouse && inventory.houseName !== 'CCSA 自立宿舍') livingCost += 500;
+                
+                let billTotal = 0;
+                const newBills = bills.map(bill => {
+                    if (bill.remainingWeeks > 0) {
+                        billTotal += bill.amount;
+                        return { ...bill, remainingWeeks: bill.remainingWeeks - 1 };
+                    }
+                    return bill;
+                }).filter(bill => bill.remainingWeeks > 0);
+                
+                setStats(prev => {
+                    const newStats = { ...prev };
+                    const totalDeduction = livingCost + billTotal;
+                    newStats.money -= totalDeduction;
+                    newStats.week += 1;
+                    newStats.ap = newStats.maxAp; 
+                    newStats.mood = Math.max(0, newStats.mood - 5);
+                    newStats.security = Math.max(0, newStats.security - 2);
+                    return newStats;
+                });
+                setBills(newBills);
+
+                const totalCost = livingCost + billTotal;
+                addLog(`第 ${stats.week} 週結算。生活支出 -$${totalCost}`);
+                addLog(`生活壓力累積: 心情 -5, 資安風險 -2`);
+                showFloat(`-$${totalCost}`, 'danger');
+
+                if ((stats.money - totalCost) < 0 && inventory.hasHouse && inventory.houseName !== 'CCSA 自立宿舍') {
+                    setTimeout(() => {
+                        setInventory(prev => ({ ...prev, hasHouse: false, houseName: '' }));
+                        addLog('【強制驅逐】因積欠房租，你被房東趕出來了！押金被沒收。');
+                        updateStats({ mood: -30, security: -10 });
+                    }, 500);
+                }
+
+                setTimeout(() => {
+                    triggerRandomEvent();
+                }, 1000);
+            };
+
+            const triggerRandomEvent = () => {
+                const roll = Math.random();
+                let eventPool = [
+                    { key: 'friend_loan', weight: 15 },
+                    { key: 'scam_romance', weight: 15 },
+                    { key: 'scam_job', weight: 15 },
+                    { key: 'accident', weight: 10 },
+                    { key: 'sickness', weight: 10 }
+                ];
+
+                if (!inventory.hasHouse) {
+                    eventPool.push({ key: 'police', weight: 40 }); 
+                }
+                
+                if (stats.health < 50) {
+                    const sickness = eventPool.find(e => e.key === 'sickness');
+                    if(sickness) sickness.weight += 30;
+                }
+
+                if (roll > 0.4) { 
+                    const totalWeight = eventPool.reduce((sum, e) => sum + e.weight, 0);
+                    let randomWeight = Math.random() * totalWeight;
+                    
+                    let selectedEventKey = null;
+                    for (let e of eventPool) {
+                        if (randomWeight < e.weight) {
+                            selectedEventKey = e.key;
+                            break;
+                        }
+                        randomWeight -= e.weight;
+                    }
+                    
+                    if (selectedEventKey && SCENARIOS[selectedEventKey]) {
+                        setCurrentEvent(SCENARIOS[selectedEventKey]);
+                        setGameState('event');
+                    } else {
+                        setGameState('home');
+                    }
+                } else {
+                    setGameState('home');
+                }
+            };
+
+            const addLog = (msg) => setLogs(prev => [`> ${msg}`, ...prev].slice(0, 5));
+
+            const startJobInterview = (job) => {
+                const mixedPool = [...job.interviews, ...GENERIC_JOB_QUESTIONS];
+                updateStats({ ap: -1 });
+                
+                startQuiz('job_interview', (passed) => {
+                    if (passed) {
+                        updateStats({ 
+                            money: job.wage * 8, 
+                            health: -job.energy, 
+                            mood: job.mood       
+                        });
+                        addLog(`工作完成！薪資 +$${job.wage*8} (心情${job.mood})`);
+                    } else {
+                        addLog(`面試失敗，或許你需要加強勞權知識。`);
+                        updateStats({ mood: -10 });
+                    }
+                }, mixedPool);
+            };
+
+            const startQuiz = (type, cb, customQs) => {
+                const qData = QUIZ_DB[type] || { title: '檢核', questions: customQs || [] };
+                if (!qData.questions || qData.questions.length < 3) { 
+                    cb(true); 
+                    return; 
+                }
+                const qs = shuffleArray(qData.questions).slice(0,3);
+                setActiveQuiz({ ...qData, questions: qs, step: 0, cb });
+            };
+
+            const shuffleArray = (arr) => {
+                if (!Array.isArray(arr)) return [];
+                return [...arr].sort(() => Math.random() - 0.5);
+            };
+
+            const openPurchaseModal = (item) => {
+                setPurchaseModal(item);
+            };
+
+            const handlePurchase = (method) => {
+                const item = purchaseModal;
+                setPurchaseModal(null);
+
+                let cost = item.price;
+                let logSuffix = "";
+
+                if (item.scam) {
+                    if (method === 'cash') {
+                        if (stats.money < cost) {
+                            alert("現金不足！但這可能是件好事...");
+                            return;
+                        }
+                        updateStats({ money: -cost, mood: item.effect.mood });
+                        alert("⚠️ 警告：這是一個投資詐騙！你的錢被捲款潛逃了，什麼都沒拿到。");
+                        addLog(`遭遇投資詐騙，損失 $${cost}。`);
+                    }
+                    setGameState('home');
+                    return;
+                }
+
+                if (method === 'cash') {
+                    if (stats.money < cost) {
+                        alert("現金不足！");
+                        return;
+                    }
+                    updateStats({ money: -cost });
+                    logSuffix = "(現金)";
+                } else if (method === 'credit') {
+                    setBills(prev => [...prev, { name: `${item.name}(卡費)`, amount: cost, remainingWeeks: 1 }]);
+                    logSuffix = "(刷卡)";
+                    addLog("【信用消費】刷卡雖然爽，但下週帳單就來了。");
+                } else if (method === 'bnpl') {
+                    const totalWithInterest = Math.floor(cost * 1.2);
+                    const weeklyPay = Math.floor(totalWithInterest / 4);
+                    setBills(prev => [...prev, { name: `${item.name}(分期)`, amount: weeklyPay, remainingWeeks: 4 }]);
+                    logSuffix = "(無卡分期)";
+                    addLog(`【財務風險】使用 BNPL，總價變為 $${totalWithInterest} (原價 $${cost})。`);
+                }
+
+                updateStats({ ...item.effect });
+                if (item.effect.item) {
+                    setInventory(prev => ({...prev, items: [...prev.items, item.effect.item]}));
+                }
+                addLog(`購買 ${item.name} ${logSuffix}`);
+                setGameState('home');
+            };
+
+            const handleEventConfirm = () => {
+                if (!currentEvent) return;
+
+                let outcome = {};
+                let message = "";
+
+                if (currentEvent.id === 'police') {
+                    const hasCard = inventory.items.includes('good_citizen_card');
+                    const isAdult = stats.age >= 18;
+
+                    if (isAdult && hasCard) {
+                        outcome = {}; 
+                        message = "出示良民證，警察確認無誤後放行。";
+                    } else if (isAdult && !hasCard) {
+                        outcome = { ap: -1, mood: -15 };
+                        message = "滿18歲未帶證件，被盤查許久。(AP -1, 心情 -15)";
+                    } else {
+                        outcome = { ap: -1, mood: -20 };
+                        message = "未滿18歲深夜遊蕩，被帶回警局通知家長。(AP -1, 心情 -20)";
+                    }
+                } 
+                else if (currentEvent.type === 'health_risk' || currentEvent.type === 'accident_risk') {
+                    const hasItem = currentEvent.checkItem && inventory.items.includes(currentEvent.checkItem);
+                    if (hasItem) {
+                        outcome = currentEvent.pass; 
+                        const itemName = SHOP_ITEMS.find(i=>i.effect.item===currentEvent.checkItem)?.name || '保險';
+                        message = `幸好有${itemName}，獲得理賠減輕損失。`;
+                    } else {
+                        outcome = currentEvent.penalty; 
+                        message = `發生${currentEvent.title}，因無保險需全額負擔！`;
+                    }
+                }
+                else if (currentEvent.type === 'scam') {
+                    if (currentEvent.checkStat && stats[currentEvent.checkStat] > currentEvent.threshold) {
+                        outcome = {}; 
+                        message = currentEvent.pass.msg || "你機警地識破了詐騙。";
+                    } else {
+                        outcome = currentEvent.penalty; 
+                        message = `慘遭${currentEvent.title}，損失慘重...`;
+                    }
+                }
+                else {
+                    outcome = currentEvent.penalty || {};
+                    message = "事件結束。";
+                }
+
+                updateStats(outcome);
+                addLog(message);
+                setCurrentEvent(null);
+                setGameState('home');
+            };
+
+            return (
+                <div className="w-full max-w-sm h-[800px] bg-black rounded-[3rem] p-3 shadow-2xl relative border-4 border-zinc-700">
+                    <div className="absolute right-[-8px] top-32 w-2 h-16 bg-zinc-800 rounded-r-md"></div>
+                    <div className="absolute left-[-8px] top-24 w-2 h-8 bg-zinc-800 rounded-l-md"></div>
+
+                    <div className={`w-full h-full bg-zinc-900 rounded-[2.5rem] overflow-hidden flex flex-col relative text-black ${screenEffect === 'glitch' ? 'glitch-effect' : ''}`} data-text="SYSTEM_FAILURE">
+                        <div className="scanlines"></div>
+                        <FloatingTextOverlay texts={floatingTexts} />
+                        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-7 bg-black rounded-b-xl z-30"></div>
+                        
+                        <div className="flex-1 overflow-hidden relative z-20 bg-white">
+                            {gameState === 'onboarding' ? <RenderOnboarding spinResult={spinResult} spinning={spinning} spinForCharacter={spinForCharacter} updateStats={updateStats} setGameState={setGameState} /> :
+                            gameState === 'home' ? <><StatBar stats={stats} /><RenderHome stats={stats} inventory={inventory} bills={bills} logs={logs} setGameState={setGameState} advanceWeek={advanceWeek} /></> :
+                            gameState === 'app_job' ? <><StatBar stats={stats} /><RenderJobs stats={stats} inventory={inventory} addLog={addLog} updateStats={updateStats} startJobInterview={startJobInterview} setGameState={setGameState} /></> :
+                            gameState === 'app_house' ? <><StatBar stats={stats} /><RenderHousing stats={stats} inventory={inventory} addLog={addLog} updateStats={updateStats} startQuiz={startQuiz} setInventory={setInventory} setGameState={setGameState} /></> :
+                            gameState === 'app_resource' ? <><StatBar stats={stats} /><RenderResource stats={stats} inventory={inventory} addLog={addLog} updateStats={updateStats} startQuiz={startQuiz} setInventory={setInventory} setGameState={setGameState} /></> :
+                            gameState === 'app_finance' ? <><StatBar stats={stats} /><RenderFinance stats={stats} bills={bills} setPurchaseModal={setPurchaseModal} setGameState={setGameState} /></> :
+                            gameState === 'ending' ? <RenderEnding stats={stats} inventory={inventory} /> : null
+                            }
+                            
+                            {activeQuiz && (
+                                <Modal title={activeQuiz.title}>
+                                    <p className="font-bold mb-4">{activeQuiz.questions[activeQuiz.step].q}</p>
+                                    <div className="space-y-2">{activeQuiz.questions[activeQuiz.step].options.map((o,i)=><button key={i} onClick={()=>{
+                                        const cor = i === activeQuiz.questions[activeQuiz.step].ans;
+                                        if(activeQuiz.step+1 < activeQuiz.questions.length) setActiveQuiz({...activeQuiz, step: activeQuiz.step+1, score: (activeQuiz.score||0)+(cor?1:0)});
+                                        else { activeQuiz.cb((activeQuiz.score||0)+(cor?1:0) === activeQuiz.questions.length); setActiveQuiz(null); }
+                                    }} className="w-full bg-gray-100 p-3 text-left hover:bg-gray-200">{o}</button>)}</div>
+                                </Modal>
+                            )}
+                            
+                            {purchaseModal && (
+                                <Modal title="購買確認">
+                                    <div className="font-bold text-xl mb-1">{purchaseModal.name}</div>
+                                    <div className="text-gray-500 mb-4">{purchaseModal.desc}</div>
+                                    <div className="space-y-2">
+                                        <button onClick={()=>handlePurchase('cash')} className="w-full bg-green-100 p-3 text-green-800 font-bold">現金 ${purchaseModal.price}</button>
+                                        {purchaseModal.payMethod.includes('credit') && stats.age>=18 && <button onClick={()=>handlePurchase('credit')} className="w-full bg-blue-100 p-3 text-blue-800 font-bold">信用卡</button>}
+                                        {purchaseModal.payMethod.includes('bnpl') && <button onClick={()=>handlePurchase('bnpl')} className="w-full bg-purple-100 p-3 text-purple-800 font-bold">無卡分期</button>}
+                                        <button onClick={()=>setPurchaseModal(null)} className="w-full bg-gray-200 p-2 text-sm">取消</button>
+                                    </div>
+                                </Modal>
+                            )}
+                            
+                            {/* 事件視窗 (確保最後渲染) */}
+                            {gameState === 'event' && currentEvent && (
+                                <Modal title="突發事件" color={currentEvent.type === 'risk' ? 'bg-red-500' : 'bg-zinc-200'}>
+                                    <div className="text-center">
+                                        <IconAlert size={48} className="mx-auto mb-4"/>
+                                        <h2 className="text-2xl font-black mb-2">{currentEvent.title}</h2>
+                                        <p className="mb-6 font-bold">{currentEvent.desc}</p>
+                                        <button onClick={handleEventConfirm} className="w-full bg-black text-white font-pixel text-xl p-2 border-2 border-white hover:bg-zinc-800 neo-btn">
+                                            確認
+                                        </button>
+                                    </div>
+                                </Modal>
+                            )}
+                        </div>
+
+                        {gameState !== 'onboarding' && (
+                            <div className="absolute bottom-2 left-0 right-0 h-6 flex justify-center z-30">
+                                <div className="w-32 h-1 bg-black/40 rounded-full cursor-pointer hover:bg-black transition-colors" onClick={()=>setGameState('home')}></div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<GameApp />);
+    </script>
 </body>
 </html>
