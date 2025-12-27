@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>自立大冒險 - 自立生活模擬器</title>
     
+    <!-- 1. 載入核心函式庫 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -47,6 +48,7 @@
         </div>
     </div>
 
+    <!-- 2. 錯誤攔截器 -->
     <script>
         window.onerror = function(msg, url, line, col, error) {
             document.getElementById('loading-msg').style.display = 'none';
@@ -57,6 +59,7 @@
         };
     </script>
 
+    <!-- 3. 遊戲主程式 -->
     <script type="text/babel">
         // --- 1. React Hooks & Utils ---
         const { useState, useEffect } = React;
@@ -278,7 +281,23 @@
                             <div key={job.id} className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
                                 <div className="flex justify-between"><h3 className="font-bold">{job.title}</h3><span className="text-blue-600 font-bold">${job.wage}/hr</span></div>
                                 <p className="text-sm text-gray-500 my-2">{job.desc}</p>
-                                <button disabled={stats.ap < job.apCost || !ok} onClick={() => { if(stats.ap < 1) addLog('太累了'); else { startJobInterview(job); } }} className="w-full bg-blue-600 text-white font-bold py-2 rounded disabled:bg-gray-300">{!ok ? '資格不符 (需社工陪同或年齡)' : `應徵 (${job.apCost} AP)`}</button>
+                                <button
+                                    disabled={stats.ap < job.apCost || !ok}
+                                    onClick={() => {
+                                        if (stats.ap < job.apCost) {
+                                            addLog('體力不足');
+                                            return;
+                                        }
+                                        if (!ok) {
+                                            addLog('資格不符');
+                                            return;
+                                        }
+                                        startJobInterview(job);
+                                    }}
+                                    className="w-full bg-blue-600 text-white font-bold py-2 rounded disabled:bg-gray-300"
+                                >
+                                    {!ok ? '資格不符 (需社工陪同或年齡)' : `應徵 (${job.apCost} AP)`}
+                                </button>
                             </div>
                         );
                     })}
@@ -298,14 +317,25 @@
                             <div className="text-xs bg-gray-100 inline-block px-1 rounded mb-2">押金 ${h.deposit}</div>
                             <p className="text-sm text-gray-500 mb-2">{h.desc}</p>
                             <button onClick={() => {
-                                if(stats.ap < 1) { addLog('沒體力'); return; }
-                                if(stats.age < 18 && !inventory.items.includes('accompaniment_card') && h.id !== 'ccsa') { alert('未滿18需社工陪同'); return; }
-                                updateStats({ap:-1});
+                                if (stats.ap < 1) { addLog('體力不足'); return; }
+                                if (stats.age < 18 && !inventory.items.includes('accompaniment_card') && h.id !== 'ccsa') {
+                                    addLog('未滿18需社工陪同');
+                                    return;
+                                }
+                                updateStats({ ap: -1 });
                                 startQuiz(h.quizType, (pass) => {
-                                    if(pass) {
-                                        if(stats.money >= h.deposit || h.rent === 0) { updateStats({money: -h.deposit, security: h.security}); setInventory(p => ({...p, hasHouse: true, houseName: h.title})); addLog('簽約成功'); setGameState('home'); }
-                                        else addLog('錢不夠付押金');
-                                    } else addLog('看房檢核失敗');
+                                    if (pass) {
+                                        if (stats.money >= h.deposit || h.rent === 0) {
+                                            updateStats({ money: -h.deposit, security: h.security });
+                                            setInventory(p => ({...p, hasHouse: true, houseName: h.title}));
+                                            addLog('簽約成功');
+                                            setGameState('home');
+                                        } else {
+                                            addLog('錢不夠付押金');
+                                        }
+                                    } else {
+                                        addLog('看房檢核失敗');
+                                    }
                                 });
                             }} className="w-full bg-orange-500 text-white font-bold py-2 rounded">預約看房 (1 AP)</button>
                         </div>
@@ -370,7 +400,7 @@
                             </div>
                         ))}
                     </div>
-                    <button onClick={() => setGameState('home')} className="w-full mt-6 bg-slate-200 text-slate-600 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition-colors"><IconArrowLeft size={18}/> 回到首頁</button>
+                    <button onClick(() => setGameState('home')} className="w-full mt-6 bg-slate-200 text-slate-600 py-3 rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-slate-300 transition-colors"><IconArrowLeft size={18}/> 回到首頁</button>
                 </div>
             </div>
         );
@@ -584,10 +614,15 @@
 
             const addLog = (msg) => setLogs(prev => [`> ${msg}`, ...prev].slice(0, 5));
 
+            // *** Modified: Start Job Interview picks 1 job-specific question + 2 generic ***
             const startJobInterview = (job) => {
-                const mixedPool = [...job.interviews, ...GAME_DATA.GENERIC_JOB_QUESTIONS];
-                updateStats({ ap: -1 });
-                
+                // 從職缺題庫挑選 1 題，再從共通題庫挑 2 題
+                const jobQs = job.interviews ? job.interviews : [];
+                const genericQs = shuffleArray(GAME_DATA.GENERIC_JOB_QUESTIONS).slice(0, 2);
+                const customQs = [...jobQs.slice(0, 1), ...genericQs];
+                // 扣除 apCost 的體力
+                const cost = job.apCost || 1;
+                updateStats({ ap: -cost });
                 startQuiz('job_interview', (passed) => {
                     if (passed) {
                         updateStats({ 
@@ -600,17 +635,21 @@
                         addLog(`面試失敗，或許你需要加強勞權知識。`);
                         updateStats({ mood: -10 });
                     }
-                }, mixedPool);
+                }, customQs);
             };
 
+            // *** Modified: startQuiz now respects custom question sets ***
             const startQuiz = (type, cb, customQs) => {
-                const qData = GAME_DATA.QUIZ_DB[type] || { title: '檢核', questions: customQs || [] };
-                if (!qData.questions || qData.questions.length < 3) { 
-                    cb(true); 
-                    return; 
+                // 使用自定題庫優先，其次使用資料庫
+                const db = GAME_DATA.QUIZ_DB[type];
+                const questions = (customQs && customQs.length) ? customQs : (db ? db.questions : []);
+                const title = db ? db.title : (type === 'job_interview' ? '面試' : '檢核');
+                if (!questions || questions.length < 3) {
+                    cb(true);
+                    return;
                 }
-                const qs = shuffleArray(qData.questions).slice(0,3);
-                setActiveQuiz({ ...qData, questions: qs, step: 0, cb });
+                const qs = shuffleArray(questions).slice(0, 3);
+                setActiveQuiz({ title, questions: qs, step: 0, cb });
             };
 
             const openPurchaseModal = (item) => {
@@ -740,11 +779,7 @@
                             {activeQuiz && (
                                 <Modal title={activeQuiz.title}>
                                     <p className="font-bold mb-4">{activeQuiz.questions[activeQuiz.step].q}</p>
-                                    <div className="space-y-2">{activeQuiz.questions[activeQuiz.step].options.map((o,i)=><button key={i} onClick={()=>{
-                                        const cor = i === activeQuiz.questions[activeQuiz.step].ans;
-                                        if(activeQuiz.step+1 < activeQuiz.questions.length) setActiveQuiz({...activeQuiz, step: activeQuiz.step+1, score: (activeQuiz.score||0)+(cor?1:0)});
-                                        else { activeQuiz.cb((activeQuiz.score||0)+(cor?1:0) === activeQuiz.questions.length); setActiveQuiz(null); }
-                                    }} className="w-full bg-gray-100 p-3 text-left hover:bg-gray-200">{o}</button>)}</div>
+                                    <div className="space-y-2">{activeQuiz.questions[activeQuiz.step].options.map((o,i)=><button key={i} onClick={()=>{ const cor = i === activeQuiz.questions[activeQuiz.step].ans; if(activeQuiz.step+1 < activeQuiz.questions.length) setActiveQuiz({...activeQuiz, step: activeQuiz.step+1, score: (activeQuiz.score||0)+(cor?1:0)}); else { activeQuiz.cb((activeQuiz.score||0)+(cor?1:0) === activeQuiz.questions.length); setActiveQuiz(null); } }} className="w-full bg-gray-100 p-3 text-left hover:bg-gray-200">{o}</button>)}</div>
                                 </Modal>
                             )}
                             
