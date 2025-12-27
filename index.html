@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>自立大冒險</title>
+    <title>自立大冒險 - 自立生活模擬器</title>
     
-    <!-- 引入 Tailwind CSS (樣式庫) -->
+    <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- 引入 React 與 ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
-    <!-- 引入 Babel (讓瀏覽器看懂 JSX) -->
+    <!-- 引入 Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <!-- Google Fonts -->
@@ -20,7 +20,7 @@
 
     <style>
         body {
-            background-color: #27272a; /* zinc-800 */
+            background-color: #27272a;
             color: black;
             font-family: 'Noto Sans TC', sans-serif;
             margin: 0;
@@ -33,43 +33,45 @@
             overflow: hidden;
             user-select: none;
         }
-
+        #error-message {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #7f1d1d;
+            color: white;
+            padding: 20px;
+            z-index: 9999;
+            white-space: pre-wrap;
+            font-family: monospace;
+            overflow: auto;
+        }
+        /* Styles ... */
         .font-pixel { font-family: 'VT323', monospace; }
         .font-main { font-family: 'Noto Sans TC', sans-serif; }
-
-        /* Neo-Brutalism Shadow */
         .neo-shadow { box-shadow: 4px 4px 0px 0px #000; }
         .neo-shadow-sm { box-shadow: 2px 2px 0px 0px #000; }
         .neo-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0px 0px #000; }
-
-        /* App Styles */
         .app-header { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .app-card { transition: all 0.2s; }
         .app-card:active { transform: scale(0.98); }
-
-        /* CRT / Glitch Effects */
         .scanlines {
             background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.05) 50%, rgba(0,0,0,0.05));
             background-size: 100% 4px;
             position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; z-index: 40;
         }
-
         @keyframes float-up {
             0% { opacity: 1; transform: translate(-50%, 0); }
             100% { opacity: 0; transform: translate(-50%, -40px); }
         }
         .animate-float { animation: float-up 1.5s ease-out forwards; }
-
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .animate-spin-fast { animation: spin 0.1s linear infinite; }
-
         @keyframes bounce-in {
             0% { transform: scale(0.8); opacity: 0; }
             80% { transform: scale(1.05); opacity: 1; }
             100% { transform: scale(1); opacity: 1; }
         }
         .animate-bounce-in { animation: bounce-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-
         @keyframes glitch-anim {
             0% { transform: translate(0); }
             20% { transform: translate(-2px, 2px); }
@@ -82,16 +84,25 @@
             animation: glitch-anim 0.2s infinite;
             filter: contrast(1.2) brightness(0.9);
         }
-
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-track { background: #18181b; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #4ade80; border-radius: 3px; }
     </style>
 </head>
 <body>
+    <div id="error-message"></div>
     <div id="root"></div>
 
-    <script type="text/babel">
+    <script>
+        // 全域錯誤捕獲：如果畫面全白，這裡會顯示錯誤原因
+        window.onerror = function(message, source, lineno, colno, error) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.style.display = 'block';
+            errorDiv.innerHTML = `<h1>系統錯誤 (System Error)</h1><p>${message}</p><p>Line: ${lineno}</p>`;
+        };
+    </script>
+
+    <script type="text/babel" data-presets="env,react">
         const { useState, useEffect } = React;
 
         // --- Icons Component (內建 SVG) ---
@@ -693,9 +704,11 @@
                     }
                 } 
                 else if (currentEvent.type === 'health_risk' || currentEvent.type === 'accident_risk') {
-                    if (currentEvent.checkItem && inventory.items.includes(currentEvent.checkItem)) {
+                    const hasItem = currentEvent.checkItem && inventory.items.includes(currentEvent.checkItem);
+                    if (hasItem) {
                         outcome = currentEvent.pass; 
-                        message = `幸好有${SHOP_ITEMS.find(i=>i.effect.item===currentEvent.checkItem)?.name || '保險'}，獲得理賠減輕損失。`;
+                        const itemName = SHOP_ITEMS.find(i=>i.effect.item===currentEvent.checkItem)?.name || '保險';
+                        message = `幸好有${itemName}，獲得理賠減輕損失。`;
                     } else {
                         outcome = currentEvent.penalty; 
                         message = `發生${currentEvent.title}，因無保險需全額負擔！`;
