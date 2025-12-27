@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>自立大冒險 - 自立生活模擬器</title>
     
-    <!-- 1. 載入核心函式庫 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -48,7 +47,6 @@
         </div>
     </div>
 
-    <!-- 2. 錯誤攔截器 -->
     <script>
         window.onerror = function(msg, url, line, col, error) {
             document.getElementById('loading-msg').style.display = 'none';
@@ -59,7 +57,6 @@
         };
     </script>
 
-    <!-- 3. 遊戲主程式 -->
     <script type="text/babel">
         // --- 1. React Hooks & Utils ---
         const { useState, useEffect } = React;
